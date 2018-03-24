@@ -1,0 +1,1 @@
+module.exports = 'mongodb://steemit:steemit@mongo1.steemdata.com:27017/SteemData';
