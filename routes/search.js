@@ -22,8 +22,8 @@ function search_text(req, res) {
             {
                 "json_metadata.tags": "steemia",
                 $or: [
-                    { 'title': { $regex: "jaysermendez", $options: 'i' } },
-                    { 'body': { $regex: "jaysermendez", $options: 'i' } }
+                    { 'title': { $regex: text, $options: 'i' } },
+                    { 'body': { $regex: text, $options: 'i' } }
                 ]
             }, {
                 "abs_rshares": 1,
@@ -43,7 +43,7 @@ function search_text(req, res) {
                 "active_votes": 1,
                 "json_metadata": 1
             }
-        ).sort({ 'created': -1 }).lean().skip(skip).cursor()
+        ).sort({ 'created': -1 }).limit(limit).skip(skip).lean().cursor()
 
     var firstItem = true;
     res.writeHead(200, { 'Content-Type': 'application/json' });
