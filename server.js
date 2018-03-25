@@ -7,9 +7,31 @@ var Schema = mongoose.Schema;
 var database = require('./config/database');
 var Posts = require('./models/posts');
 var Util = require('./utils/utils');
+var postRoutes = require('./routes/posts');
+var commentsVotes = require('./routes/comments_votes');
+var searchRoutes = require('./routes/search');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+// Add headers
+app.use(function (req, res, next) {
+
+    // Website you wish to allow to connect
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:8100');
+
+    // Request methods you wish to allow
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+
+    // Request headers you wish to allow
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+
+    // Set to true if you need the website to include cookies in the requests sent
+    // to the API (e.g. in case you use sessions)
+    res.setHeader('Access-Control-Allow-Credentials', true);
+
+    // Pass to next layer of middleware
+    next();
+});
 
 mongoose.connect(database);
 
@@ -17,45 +39,38 @@ mongoose.connection.on('connected', function () {
 
     console.log('Mongoose default connection open to ' + database);
 
-    app.get("/posts", (req, res) => {
-        Posts
-        .find({ "json_metadata.tags": "steemia" })
-        .sort({'created': -1})
-        .limit(25)
-        .exec((err, posts) => {
-            res.send(posts)
-        })
-    });
+    // New Posts Endpoint
+    app.get("/posts/new", postRoutes.get_new);
 
-    app.get("/posts/trending", (req, res) => {
+    // Trending Posts Endpoint
+    app.get("/posts/trending", postRoutes.get_trending);
 
-        let date = Util.seven_days_ago();
-        Posts
-        .find({ "json_metadata.tags": "steemia"})
-        .sort({'created': -1})
-        .limit(25)
-        .exec((err, posts) => {
-            var result = posts.map(post => {
-                post = JSON.parse(JSON.stringify(post));
-                let abs_rshares = post["abs_rshares"];
-                let created = new Date(post["created"]).getTime() / 1000;
-                let score = Util.caculate_trending(abs_rshares, created);
-                if (isNaN(score)) score = 0;
-                post["score"] = score;
-                return post;
-            });
-            var sorted = result.sort( function ( a, b ) { 
-                return b.score - a.score; 
-            } )
-            res.send(sorted);
-        });
+    // Trending Posts Endpoint
+    app.get("/posts/hot", postRoutes.get_hot);
 
-        
+    // Endpoint to get post comments
+    app.get("/posts/:url/comments", commentsVotes.get_comments);
+
+    // Endpoint to get post votes
+    app.get("/posts/:url/votes", commentsVotes.get_votes);
+
+    // Endpoint to get post search
+    app.get("/posts/search", searchRoutes.search_text);
+
+    // Endpoint to get post tag search
+    app.get("/tags/search", searchRoutes.search_tags);
+
+    // Endpoint to search for users
+    app.get("/users/search", searchRoutes.search_users);
+
+    app.get("/", (req, res) => {
+        res.send("Steemia API")
     })
     
     app.listen(port, () => {
         console.log("Server listening on port " + port);
     });
+
 
 });
 
@@ -68,12 +83,3 @@ mongoose.connection.on('error', function (err) {
 mongoose.connection.on('disconnected', function () {
     console.log('Mongoose default connection disconnected');
 });
-
-//console.log(Util.caculate_trending(40460939026, 1521850746));
-// console.log(Util.caculate_trending(5772445047028, 1521755652));
-// console.log(Util.caculate_trending(6745757389142, 1521456096));
-// console.log(Util.caculate_trending(377440290440, 1521822885));
-
-
-
-

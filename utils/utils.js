@@ -10,7 +10,6 @@ const T_hot = 10000;
 
 function caculate_score(v_shares, created, S, T) {
 
-    //created = new Date(created).getTime() / 1000;
     var mod_score = v_shares / S;
 
     var order = Math.log10(Math.abs(mod_score));
@@ -32,13 +31,25 @@ var calculate_trending = function calculate_trending(v_shares, created) {
     return caculate_score(v_shares, created, S_trending, T_trending);
 }
 
-var seven_days_ago = function seven_days_ago() {
-    var days = 7;
-    var date = new Date();
-    var last = new Date(date.getTime() - (days * 24 * 60 * 60 * 1000));
-    return last;
+var reputation = function reputation(reputation) {
+    if (reputation == null) return reputation;
+      reputation = parseInt(reputation);
+      let rep = String(reputation);
+      const neg = rep.charAt(0) === "-";
+      rep = neg ? rep.substring(1) : rep;
+      const str = rep;
+      const leadingDigits = parseInt(str.substring(0, 4));
+      const log = Math.log(leadingDigits) / Math.log(10);
+      const n = str.length - 1;
+      let out = n + (log - parseInt(log));
+      if (isNaN(out)) out = 0;
+      out = Math.max(out - 9, 0);
+      out = (neg ? -1 : 1) * out;
+      out = out * 9 + 25;
+      out = parseInt(out);
+      return out;
 }
 
 exports.calculate_hot = calculate_hot;
 exports.caculate_trending = calculate_trending;
-exports.seven_days_ago = seven_days_ago;
+exports.reputation = reputation;
