@@ -32,11 +32,26 @@ function is_post_voted(username, object) {
         }
 
         else {
-            for (let i = 0; i < object["active_votes"].length; i++) {
-                if (object["active_votes"][i].voter === username) {
+            let string = JSON.stringify(object["active_votes"], null, '\n')
+                             .replace(/"/g, '\\"')
+                             .replace(/\n/g, '    ')
+                             .replace(/(?:[ ]{4}((?:[ ]{4})*))/g, '\\n$1');
+            let match = string.match(username);
+            
+            try {
+                if (match.index !== null || match !== undefined) {
                     is_voted = true;
+                } 
+    
+                else {
+                    is_voted = false;
                 }
             }
+
+            catch (e) {
+                is_voted = false;
+            }
+            
         }
     }
 

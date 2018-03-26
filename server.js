@@ -10,6 +10,7 @@ var Util = require('./utils/utils');
 var postRoutes = require('./routes/posts');
 var commentsVotes = require('./routes/comments_votes');
 var searchRoutes = require('./routes/search');
+var accountRoutes = require('./routes/accounts');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -62,6 +63,9 @@ mongoose.connection.on('connected', function () {
 
     // Endpoint to search for users
     app.get("/users/search", searchRoutes.search_users);
+
+    // Endpoint to search user info
+    app.get("/users/info", accountRoutes.get_user);
 
     app.get("/", (req, res) => {
         res.send("Steemia API")

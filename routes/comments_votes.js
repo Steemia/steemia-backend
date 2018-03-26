@@ -59,7 +59,7 @@ function get_votes(req,res) {
     var url = req.params.url;
     Posts
         .findOne({ "json_metadata.tags": "steemia", "permlink": url })
-        .sort({ 'created': -1 })
+        .lean()
         .exec((err, post) => {
             post = JSON.parse(JSON.stringify(post));
 
