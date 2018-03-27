@@ -43,8 +43,14 @@ function _get_posts(req, res, type) {
                 // Get videos of the post
                 post["videos"] = Helper.get_body_video(post);
 
-                if (post["videos"].length == 1 && post["body"] == post["videos"][0]) {
-                    post["video_only"] = true;
+                if (post["videos"] !== null) {
+                    if (post["videos"].length == 1 && post["body"].trim() == post["videos"][0]) {
+                        post["video_only"] = true;
+                    }
+    
+                    else {
+                        post["video_only"] = false;
+                    }
                 }
 
                 else {
@@ -169,8 +175,14 @@ function get_feed(req, res) {
                 // Get videos of the post
                 post["videos"] = Helper.get_body_video(post);
 
-                if (post["videos"].length == 1 && post["body"] == post["videos"][0]) {
-                    post["video_only"] = true;
+                if (post["videos"] !== null) {
+                    if (post["videos"].length == 1 && post["body"].trim() == post["videos"][0]) {
+                        post["video_only"] = true;
+                    }
+    
+                    else {
+                        post["video_only"] = false;
+                    }
                 }
 
                 else {
