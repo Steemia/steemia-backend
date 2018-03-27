@@ -112,7 +112,7 @@ function get_body_image(post) {
  */
 function get_body_videos(post) {
     var videos = null;
-    var v = post.body.match(/^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/igm);
+    var v = post.body.trim().match(/^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/igm);
     if (v !== null) {
         videos = v;
     }
