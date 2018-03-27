@@ -42,6 +42,14 @@ function _get_posts(req, res, type) {
     
                 // Get videos of the post
                 post["videos"] = Helper.get_body_video(post);
+
+                if (post["videos"].length == 1 && post["body"] == post["videos"][0]) {
+                    post["video_only"] = true;
+                }
+
+                else {
+                    post["video_only"] = false;
+                }
     
                 post.total_payout_value["amount"] += post.pending_payout_value["amount"];
                 post.author_reputation = Util.reputation(post.author_reputation);
@@ -65,6 +73,7 @@ function _get_posts(req, res, type) {
                     max_accepted_payout: parseFloat(post.max_accepted_payout),
                     total_payout_reward: parseFloat(post.total_payout_value) + parseFloat(post.pending_payout_value),
                     videos: post.videos || null,
+                    video_only: post["video_only"],
                     top_likers_avatars: top_likers
                 }
             });
@@ -159,6 +168,14 @@ function get_feed(req, res) {
     
                 // Get videos of the post
                 post["videos"] = Helper.get_body_video(post);
+
+                if (post["videos"].length == 1 && post["body"] == post["videos"][0]) {
+                    post["video_only"] = true;
+                }
+
+                else {
+                    post["video_only"] = false;
+                }
     
                 post.total_payout_value["amount"] += post.pending_payout_value["amount"];
                 post.author_reputation = Util.reputation(post.author_reputation);
@@ -182,6 +199,7 @@ function get_feed(req, res) {
                     max_accepted_payout: parseFloat(post.max_accepted_payout),
                     total_payout_reward: parseFloat(post.total_payout_value) + parseFloat(post.pending_payout_value),
                     videos: post.videos || null,
+                    video_only: post["video_only"],
                     top_likers_avatars: top_likers
                 }
             });
