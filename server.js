@@ -18,10 +18,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(function (req, res, next) {
 
     // Website you wish to allow to connect
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:8100');
+    res.setHeader('Access-Control-Allow-Origin', '*');
 
     // Request methods you wish to allow
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
 
     // Request headers you wish to allow
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
@@ -67,10 +67,13 @@ mongoose.connection.on('connected', function () {
     // Endpoint to search user info
     app.get("/users/info", accountRoutes.get_user);
 
+    // Endpoint to get user feed
+    app.get("/posts/feed", postRoutes.get_feed);
+
     app.get("/", (req, res) => {
         res.send("Steemia API")
-    })
-    
+    });
+
     app.listen(port, () => {
         console.log("Server listening on port " + port);
     });
