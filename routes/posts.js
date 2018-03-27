@@ -131,7 +131,7 @@ function get_feed(req, res) {
     var user = req.query.user;
     var limit = parseInt(req.query.limit);
     var start_author = req.query.start_author;
-    var permlink = req.query.permlink;
+    var permlink = req.query.start_permlink;
     var skip = parseInt(req.query.skip);
     var username = req.query.username;
 
