@@ -112,7 +112,7 @@ function get_body_image(post) {
  */
 function get_body_videos(post) {
     var videos = null;
-    var v = post.body.match(/^(http:\/\/|https:\/\/)(vimeo\.com|youtu\.be|www\.youtube\.com)\/([\w\/]+)([\?].*)?$/igm);
+    var v = post.body.match(/(http:|https:|)\/\/(player.|www.)?(vimeo\.com|youtu(be\.com|\.be|be\.googleapis\.com))\/(video\/|embed\/|watch\?v=|v\/)?([A-Za-z0-9._%-]*)(\&\S+)?/);
 
     if (v !== null) {
         videos = v;
