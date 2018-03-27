@@ -96,11 +96,13 @@ function get_body_image(post) {
 
     catch (e) {
         var n = post.body.match(/([a-z\-_0-9\/\:\.]*\.(jpg|jpeg|png|gif))/i)
-        if (n === null) return null;
+        if (n === null) image = null;
         else {
-            return n[0];
+            image = n[0];
         };
     }
+
+    return image;
 }
 
 /**
