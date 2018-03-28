@@ -56,28 +56,26 @@ function get_comments(req, res) {
  * @param {*} res 
  */
 function get_votes(req,res) {
-    var url = req.params.url;
-    Posts
-        .findOne({ "json_metadata.tags": "steemia", "permlink": url })
-        .lean()
-        .exec((err, post) => {
-            post = JSON.parse(JSON.stringify(post));
+    var url = req.query.permlink;
+    var author = req.query.author;
+    steem.api.getActiveVotes(author, url, (err, votes) => {
+        var results = votes.map(voter => {
+            voter["reputation"] = Util.reputation(voter["reputation"]);
+            voter["percent"] = voter["percent"] / 100;
 
-            var results = post["active_votes"].map(voter => {
-                voter["reputation"] = Util.reputation(voter["reputation"]);
-                voter["percent"] = voter["percent"] / 100;
+            return {
+                profile_image: "https://img.busy.org/@" + voter["voter"],
+                username: voter["voter"],
+                reputation: voter["reputation"],
+                percent: voter["percent"]
+            }
 
-                return {
-                    profile_image: "https://img.busy.org/@" + voter["voter"],
-                    username: voter["voter"],
-                    reputation: voter["reputation"],
-                    percent: voter["percent"]
-                }
-            });
-            res.send({
-                results: results
-            });
         });
+
+        res.send({
+            results: results
+        });
+    });
 
 }
 

@@ -53,7 +53,7 @@ mongoose.connection.on('connected', function () {
     app.get("/posts/:url/comments", commentsVotes.get_comments);
 
     // Endpoint to get post votes
-    app.get("/posts/:url/votes", commentsVotes.get_votes);
+    app.get("/posts/votes", commentsVotes.get_votes);
 
     // Endpoint to get post search
     app.get("/posts/search", searchRoutes.search_text);
