@@ -62,26 +62,7 @@ function _get_posts(req, res, type) {
 
                 var top_likers = Helper.get_top_likers(post.active_votes);
 
-                return {
-                    author: post.author,
-                    avatar: "https://img.busy.org/@" + post.author,
-                    author_reputation: post.author_reputation,
-                    title: post.title,
-                    full_body: post.body,
-                    url: post.url,
-                    created: post.created,
-                    tags: post.json_metadata.tags,
-                    category: post.category,
-                    children: post.children,
-                    body: image,
-                    vote: post.vote,
-                    net_likes: post.net_votes,
-                    max_accepted_payout: parseFloat(post.max_accepted_payout),
-                    total_payout_reward: parseFloat(post.total_payout_value) + parseFloat(post.pending_payout_value),
-                    videos: post.videos || null,
-                    video_only: post["video_only"],
-                    top_likers_avatars: top_likers
-                }
+                return _get_response(post, image, top_likers);
             });
 
             // If pagination, remove the starting element
