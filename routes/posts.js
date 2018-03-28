@@ -33,13 +33,13 @@ function _get_posts(req, res, type) {
             var result = posts.map(post => {
 
                 post.json_metadata = JSON.parse(post.json_metadata);
-    
+
                 // Check if user has voted this post.
                 post["vote"] = Helper.is_post_voted(username, post);
-    
+
                 // Get body image of the post.
                 var image = Helper.get_body_image(post);
-    
+
                 // Get videos of the post
                 post["videos"] = Helper.get_body_video(post);
 
@@ -47,7 +47,7 @@ function _get_posts(req, res, type) {
                     if (post["videos"].length == 1 && post["body"].trim() == post["videos"][0]) {
                         post["video_only"] = true;
                     }
-    
+
                     else {
                         post["video_only"] = false;
                     }
@@ -56,42 +56,23 @@ function _get_posts(req, res, type) {
                 else {
                     post["video_only"] = false;
                 }
-    
+
                 post.total_payout_value["amount"] += post.pending_payout_value["amount"];
                 post.author_reputation = Util.reputation(post.author_reputation);
-    
+
                 var top_likers = Helper.get_top_likers(post.active_votes);
-    
-                return {
-                    author: post.author,
-                    avatar: "https://img.busy.org/@" + post.author,
-                    author_reputation: post.author_reputation,
-                    title: post.title,
-                    full_body: post.body,
-                    url: post.url,
-                    created: post.created,
-                    tags: post.json_metadata.tags,
-                    category: post.category,
-                    children: post.children,
-                    body: image,
-                    vote: post.vote,
-                    net_likes: post.net_votes,
-                    max_accepted_payout: parseFloat(post.max_accepted_payout),
-                    total_payout_reward: parseFloat(post.total_payout_value) + parseFloat(post.pending_payout_value),
-                    videos: post.videos || null,
-                    video_only: post["video_only"],
-                    top_likers_avatars: top_likers
-                }
+
+                return _get_response(post, image, top_likers);
             });
-    
+
             // If pagination, remove the starting element
             if (start_author !== undefined && permlink !== undefined) {
                 result.shift();
             }
-    
+
             let offset = result[result.length - 1].url.split('/')[3];
             let offset_author = result[result.length - 1].author;
-    
+
             res.send({
                 results: result,
                 offset: offset,
@@ -106,8 +87,36 @@ function _get_posts(req, res, type) {
                 offset_author: null
             })
         }
-       
+
     });
+}
+
+/**
+ * Method to prepared response object
+ * @param {*} post 
+ * @returns Returns an object with the response.
+ */
+function _get_response(post, image, top_likers) {
+    return {
+        author: post.author,
+        avatar: "https://img.busy.org/@" + post.author,
+        author_reputation: post.author_reputation,
+        title: post.title,
+        full_body: post.body,
+        url: post.url,
+        created: post.created,
+        tags: post.json_metadata.tags,
+        category: post.category,
+        children: post.children,
+        body: image,
+        vote: post.vote,
+        net_likes: post.net_votes,
+        max_accepted_payout: parseFloat(post.max_accepted_payout),
+        total_payout_reward: parseFloat(post.total_payout_value) + parseFloat(post.pending_payout_value),
+        videos: post.videos || null,
+        video_only: post["video_only"],
+        top_likers_avatars: top_likers
+    }
 }
 
 /**
@@ -135,6 +144,48 @@ function get_trending(req, res) {
  */
 function get_hot(req, res) {
     _get_posts(req, res, "getDiscussionsByHot");
+}
+
+function get_post_single(req, res) {
+    var username = req.query.username;
+    var author = req.query.author;
+    var permlink = req.query.permlink;
+
+    steem.api.getContent(author, permlink, (err, post) => {
+
+        post.json_metadata = JSON.parse(post.json_metadata);
+
+        // Check if user has voted this post.
+        post["vote"] = Helper.is_post_voted(username, post);
+
+        // Get body image of the post.
+        var image = Helper.get_body_image(post);
+
+        // Get videos of the post
+        post["videos"] = Helper.get_body_video(post);
+
+        if (post["videos"] !== null) {
+            if (post["videos"].length == 1 && post["body"].trim() == post["videos"][0]) {
+                post["video_only"] = true;
+            }
+
+            else {
+                post["video_only"] = false;
+            }
+        }
+
+        else {
+            post["video_only"] = false;
+        }
+
+        post.total_payout_value["amount"] += post.pending_payout_value["amount"];
+        post.author_reputation = Util.reputation(post.author_reputation);
+
+        var top_likers = Helper.get_top_likers(post.active_votes);
+
+        res.send(_get_response(post, image, top_likers));
+
+    })
 }
 
 /**
@@ -165,13 +216,13 @@ function get_feed(req, res) {
             var result = posts.map(post => {
 
                 post.json_metadata = JSON.parse(post.json_metadata);
-    
+
                 // Check if user has voted this post.
                 post["vote"] = Helper.is_post_voted(username, post);
-    
+
                 // Get body image of the post.
                 var image = Helper.get_body_image(post);
-    
+
                 // Get videos of the post
                 post["videos"] = Helper.get_body_video(post);
 
@@ -179,7 +230,7 @@ function get_feed(req, res) {
                     if (post["videos"].length == 1 && post["body"].trim() == post["videos"][0]) {
                         post["video_only"] = true;
                     }
-    
+
                     else {
                         post["video_only"] = false;
                     }
@@ -188,42 +239,23 @@ function get_feed(req, res) {
                 else {
                     post["video_only"] = false;
                 }
-    
+
                 post.total_payout_value["amount"] += post.pending_payout_value["amount"];
                 post.author_reputation = Util.reputation(post.author_reputation);
-    
+
                 var top_likers = Helper.get_top_likers(post.active_votes);
-    
-                return {
-                    author: post.author,
-                    avatar: "https://img.busy.org/@" + post.author,
-                    author_reputation: post.author_reputation,
-                    title: post.title,
-                    full_body: post.body,
-                    url: post.url,
-                    created: post.created,
-                    tags: post.json_metadata.tags,
-                    category: post.category,
-                    children: post.children,
-                    body: image,
-                    vote: post.vote,
-                    net_likes: post.net_votes,
-                    max_accepted_payout: parseFloat(post.max_accepted_payout),
-                    total_payout_reward: parseFloat(post.total_payout_value) + parseFloat(post.pending_payout_value),
-                    videos: post.videos || null,
-                    video_only: post["video_only"],
-                    top_likers_avatars: top_likers
-                }
+
+                return _get_response(post, image, top_likers);
             });
-    
+
             // If pagination, remove the starting element
             if (start_author !== undefined && permlink !== undefined) {
                 result.shift();
             }
-    
+
             let offset = result[result.length - 1].url.split('/')[3];
             let offset_author = result[result.length - 1].author;
-    
+
             res.send({
                 results: result,
                 offset: offset,
@@ -238,7 +270,7 @@ function get_feed(req, res) {
                 offset_author: null
             })
         }
-       
+
     });
 }
 
@@ -246,3 +278,4 @@ exports.get_new = get_new;
 exports.get_trending = get_trending;
 exports.get_hot = get_hot;
 exports.get_feed = get_feed;
+exports.get_post_single = get_post_single;

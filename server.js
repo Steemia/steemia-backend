@@ -50,7 +50,7 @@ mongoose.connection.on('connected', function () {
     app.get("/posts/hot", postRoutes.get_hot);
 
     // Endpoint to get post comments
-    app.get("/posts/:url/comments", commentsVotes.get_comments);
+    app.get("/posts/comments", commentsVotes.get_comments);
 
     // Endpoint to get post votes
     app.get("/posts/votes", commentsVotes.get_votes);
@@ -70,6 +70,10 @@ mongoose.connection.on('connected', function () {
     // Endpoint to get user feed
     app.get("/posts/feed", postRoutes.get_feed);
 
+    // Endpoint to get post single
+    app.get("/posts/info", postRoutes.get_post_single);
+
+    // Handle the base path
     app.get("/", (req, res) => {
         res.send("Steemia API")
     });
@@ -77,7 +81,6 @@ mongoose.connection.on('connected', function () {
     app.listen(port, () => {
         console.log("Server listening on port " + port);
     });
-
 
 });
 
