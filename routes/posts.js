@@ -11,7 +11,7 @@ var exports = module.exports = {};
  * @param {*} res 
  * @param {String} type 
  */
-function _get_posts(req, res, type) {
+function _get_posts(req, res, type, tag) {
     var limit = parseInt(req.query.limit);
     var start_author = req.query.start_author;
     var permlink = req.query.start_permlink;
@@ -19,7 +19,7 @@ function _get_posts(req, res, type) {
 
     let object = {
         "limit": limit,
-        "tag": "steemia"
+        "tag": tag
     }
 
     if (start_author !== undefined && permlink !== undefined) {
@@ -125,7 +125,7 @@ function _get_response(post, image, top_likers) {
  * @param {*} res 
  */
 function get_new(req, res) {
-    _get_posts(req, res, "getDiscussionsByCreated");
+    _get_posts(req, res, "getDiscussionsByCreated", "steemia");
 }
 
 /**
@@ -134,7 +134,7 @@ function get_new(req, res) {
  * @param {*} res 
  */
 function get_trending(req, res) {
-    _get_posts(req, res, "getDiscussionsByTrending");
+    _get_posts(req, res, 'getDiscussionsByTrending', "steemia");
 }
 
 /**
@@ -143,9 +143,88 @@ function get_trending(req, res) {
  * @param {*} res 
  */
 function get_hot(req, res) {
-    _get_posts(req, res, "getDiscussionsByHot");
+    _get_posts(req, res, "getDiscussionsByHot", "steemia");
 }
 
+function get_profile_posts(req, res) {
+    var user = req.query.user;
+    var limit = parseInt(req.query.limit);
+    var skip = parseInt(req.query.skip);
+    var username = req.query.username;
+
+    Posts.find(
+        { author: user, "json_metadata.tags": "steemia" },
+        {
+            "abs_rshares": 1,
+            "created": 1,
+            "author": 1,
+            "author_reputation": 1,
+            "title": 1,
+            "body": 1,
+            "url": 1,
+            "tags": 1,
+            "category": 1,
+            "children": 1,
+            "net_votes": 1,
+            "max_accepted_payout": 1,
+            "total_payout_value": 1,
+            "pending_payout_value": 1,
+            "active_votes": 1,
+            "json_metadata": 1
+        }
+    ).sort({ 'created': -1 }).limit(limit).skip(skip).lean().exec((err, data) => {
+        
+        var result = data.map(post => {
+
+            post = JSON.parse(JSON.stringify(post));
+
+            post.json_metadata = JSON.parse(JSON.stringify(post.json_metadata));
+
+            // Check if user has voted this post.
+            post["vote"] = Helper.is_post_voted(username, post);
+
+            // Get body image of the post.
+            var image = Helper.get_body_image(post);
+
+            // Get videos of the post
+            post["videos"] = Helper.get_body_video(post);
+
+            if (post["videos"] !== null) {
+                if (post["videos"].length == 1 && post["body"].trim() == post["videos"][0]) {
+                    post["video_only"] = true;
+                }
+
+                else {
+                    post["video_only"] = false;
+                }
+            }
+
+            else {
+                post["video_only"] = false;
+            }
+
+            post.max_accepted_payout = post.max_accepted_payout.amount;
+            post.total_payout_value = post.total_payout_value.amount + post.pending_payout_value.amount;
+            post.pending_payout_value = post.pending_payout_value.amount;
+            post.author_reputation = Util.reputation(post.author_reputation);
+
+            var top_likers = Helper.get_top_likers(post.active_votes);
+
+            return _get_response(post, image, top_likers);
+        });
+
+        res.send({
+            results: result,
+        });
+
+    });
+}
+
+/**
+ * Method to get a single post
+ * @param {*} req 
+ * @param {*} res 
+ */
 function get_post_single(req, res) {
     var username = req.query.username;
     var author = req.query.author;
@@ -156,29 +235,29 @@ function get_post_single(req, res) {
         post.json_metadata = JSON.parse(post.json_metadata);
 
         // Check if user has voted this post.
-        post["vote"] = Helper.is_post_voted(username, post);
+        post['vote'] = Helper.is_post_voted(username, post);
 
         // Get body image of the post.
         var image = Helper.get_body_image(post);
 
         // Get videos of the post
-        post["videos"] = Helper.get_body_video(post);
+        post['videos'] = Helper.get_body_video(post);
 
-        if (post["videos"] !== null) {
-            if (post["videos"].length == 1 && post["body"].trim() == post["videos"][0]) {
-                post["video_only"] = true;
+        if (post['videos'] !== null) {
+            if (post['videos'].length == 1 && post['body'].trim() == post['videos'][0]) {
+                post['video_only'] = true;
             }
 
             else {
-                post["video_only"] = false;
+                post['video_only'] = false;
             }
         }
 
         else {
-            post["video_only"] = false;
+            post['video_only'] = false;
         }
 
-        post.total_payout_value["amount"] += post.pending_payout_value["amount"];
+        post.total_payout_value['amount'] += post.pending_payout_value['amount'];
         post.author_reputation = Util.reputation(post.author_reputation);
 
         var top_likers = Helper.get_top_likers(post.active_votes);
@@ -279,3 +358,4 @@ exports.get_trending = get_trending;
 exports.get_hot = get_hot;
 exports.get_feed = get_feed;
 exports.get_post_single = get_post_single;
+exports.get_profile_posts = get_profile_posts;

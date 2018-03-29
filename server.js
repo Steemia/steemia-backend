@@ -56,6 +56,9 @@ mongoose.connection.on('connected', () => {
     // Endpoint to get post votes
     app.get("/posts/votes", commentsVotes.get_votes);
 
+    // Endpoint to get posts from user blog
+    app.get("/posts/blog", postRoutes.get_profile_posts);
+
     // Endpoint to get post search
     app.get("/posts/search", searchRoutes.search_text);
 
