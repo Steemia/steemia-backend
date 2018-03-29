@@ -65,7 +65,7 @@ mongoose.connection.on('connected', function () {
     app.get("/users/search", searchRoutes.search_users);
 
     // Endpoint to search user info
-    app.get("/users/info", accountRoutes.get_user);
+    app.get("/users/info", accountRoutes.get_account);
 
     // Endpoint to get user feed
     app.get("/posts/feed", postRoutes.get_feed);
