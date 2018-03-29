@@ -76,8 +76,8 @@ async function _get_account(username) {
                             voting_power: parseFloat(steemPower.toFixed(2)),
                             estimated_balance: data,
                             sbd_balance: result.sbd_balance,
-                            balance: balance,
-                            
+                            balance: result.balance,
+
                     }
                     if (Object.keys(result.json_metadata).length === 0 && result.json_metadata.constructor === Object) {
                         resolve(r);
