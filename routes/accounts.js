@@ -67,21 +67,38 @@ async function _get_account(username) {
 
                 var balance = steem.formatter.estimateAccountValue(result);
                 balance.then(data => {
-                    resolve({
-                        created: result.created,
-                        reputation: result.reputation,
-                        username: result.name,
-                        profile_image: "https://img.busy.org/@" + result.name,
-                        has_followed: 0,
-                        name: result.json_metadata.profile.name,
-                        about: result.json_metadata.profile.about,
-                        location: result.json_metadata.profile.location,
-                        website: result.json_metadata.profile.website,
-                        voting_power: parseFloat(steemPower.toFixed(2)),
-                        estimated_balance: data
-                    });
+                    if (Object.keys(result.json_metadata).length === 0 && result.json_metadata.constructor === Object) {
+                        resolve({
+                            created: result.created,
+                            reputation: result.reputation,
+                            username: result["name"],
+                            profile_image: "https://img.busy.org/@" + result.name,
+                            has_followed: 0,
+                            name: "",
+                            about: "",
+                            location: "",
+                            website: "",
+                            voting_power: parseFloat(steemPower.toFixed(2)),
+                            estimated_balance: data
+                        });
+                    }
+                    else {
+                        resolve({
+                            created: result.created,
+                            reputation: result.reputation,
+                            username: result["name"],
+                            profile_image: "https://img.busy.org/@" + result.name,
+                            has_followed: 0,
+                            name: result.json_metadata.profile.name || "",
+                            about: result.json_metadata.profile.about || "",
+                            location: result.json_metadata.profile.location || "",
+                            website: result.json_metadata.profile.website | "",
+                            voting_power: parseFloat(steemPower.toFixed(2)),
+                            estimated_balance: data
+                        });
+                    }
+
                 });
-                
             }
             else resolve(err);
         });
@@ -95,6 +112,8 @@ async function _get_account(username) {
  */
 async function get_account(req, res) {
     var user = req.query.user || null;
+    user = user.toString();
+    console.log(user)
     var username = req.query.username;
 
     // Get account data
