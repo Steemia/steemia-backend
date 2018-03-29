@@ -67,35 +67,27 @@ async function _get_account(username) {
 
                 var balance = steem.formatter.estimateAccountValue(result);
                 balance.then(data => {
-                    if (Object.keys(result.json_metadata).length === 0 && result.json_metadata.constructor === Object) {
-                        resolve({
+                    let r = {
                             created: result.created,
                             reputation: result.reputation,
                             username: result["name"],
                             profile_image: "https://img.busy.org/@" + result.name,
                             has_followed: 0,
-                            name: "",
-                            about: "",
-                            location: "",
-                            website: "",
                             voting_power: parseFloat(steemPower.toFixed(2)),
-                            estimated_balance: data
-                        });
+                            estimated_balance: data,
+                            sbd_balance: result.sbd_balance,
+                            balance: balance,
+                            
+                    }
+                    if (Object.keys(result.json_metadata).length === 0 && result.json_metadata.constructor === Object) {
+                        resolve(r);
                     }
                     else {
-                        resolve({
-                            created: result.created,
-                            reputation: result.reputation,
-                            username: result["name"],
-                            profile_image: "https://img.busy.org/@" + result.name,
-                            has_followed: 0,
-                            name: result.json_metadata.profile.name || "",
-                            about: result.json_metadata.profile.about || "",
-                            location: result.json_metadata.profile.location || "",
-                            website: result.json_metadata.profile.website | "",
-                            voting_power: parseFloat(steemPower.toFixed(2)),
-                            estimated_balance: data
-                        });
+                        r.name = result.json_metadata.profile.name;
+                        r.about = result.json_metadata.profile.about;
+                        r.location = result.json_metadata.profile.location;
+                        r.website = result.json_metadata.profile.website;
+                        resolve(r);
                     }
 
                 });
