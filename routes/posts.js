@@ -73,7 +73,7 @@ function _get_posts(req, res, type) {
             let offset = result[result.length - 1].url.split('/')[3];
             let offset_author = result[result.length - 1].author;
 
-            res.send({
+            res.status(200).send({
                 results: result,
                 offset: offset,
                 offset_author: offset_author
@@ -81,7 +81,7 @@ function _get_posts(req, res, type) {
         }
 
         else {
-            res.send({
+            res.status(200).send({
                 results: [],
                 offset: null,
                 offset_author: null
@@ -264,7 +264,7 @@ function get_feed(req, res) {
         }
 
         else {
-            res.send({
+            res.status(200).send({
                 results: [],
                 offset: null,
                 offset_author: null
