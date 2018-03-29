@@ -35,11 +35,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Handle all 404 errors
-app.use((req, res, next) => {
-    res.status(404).send({error: "404 NOT FOUND"});
-});
-
 mongoose.connect(database);
 
 mongoose.connection.on('connected', () => {
