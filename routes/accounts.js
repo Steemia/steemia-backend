@@ -105,7 +105,6 @@ async function _get_account(username) {
 async function get_account(req, res) {
     var user = req.query.user || null;
     user = user.toString();
-    console.log(user)
     var username = req.query.username;
 
     // Get account data
