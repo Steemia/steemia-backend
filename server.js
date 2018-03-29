@@ -14,8 +14,9 @@ var accountRoutes = require('./routes/accounts');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
 // Add headers
-app.use(function (req, res, next) {
+app.use((req, res, next) => {
 
     // Website you wish to allow to connect
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -34,9 +35,14 @@ app.use(function (req, res, next) {
     next();
 });
 
+// Handle all 404 errors
+app.use((req, res, next) => {
+    res.status(404).send({error: "404 NOT FOUND"});
+});
+
 mongoose.connect(database);
 
-mongoose.connection.on('connected', function () {
+mongoose.connection.on('connected', () => {
 
     console.log('Mongoose default connection open to ' + database);
 
@@ -85,11 +91,11 @@ mongoose.connection.on('connected', function () {
 });
 
 // If the connection throws an error
-mongoose.connection.on('error', function (err) {
+mongoose.connection.on('error', (err) => {
     console.log('Mongoose default connection error: ' + err);
 });
 
 // When the connection is disconnected
-mongoose.connection.on('disconnected', function () {
+mongoose.connection.on('disconnected', () => {
     console.log('Mongoose default connection disconnected');
 });
