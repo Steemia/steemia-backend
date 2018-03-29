@@ -36,6 +36,7 @@ function get_comments(req, res) {
                 children: comment.children
             }
         });
+        final.reverse();
         res.send({
             results: final
         })
