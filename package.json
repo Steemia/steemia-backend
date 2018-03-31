@@ -4,6 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
+    "preinstall": "npm i -g pm2 && pm2 install pm2-logrotate",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
