@@ -10,9 +10,9 @@ const T_hot = 10000;
 
 function caculate_score(v_shares, created, S, T) {
 
-    var mod_score = v_shares / S;
+    let mod_score = v_shares / S;
 
-    var order = Math.log10(Math.abs(mod_score));
+    let order = Math.log10(Math.max(Math.abs(mod_score), 1));
 
     let sign = 0;
 
@@ -23,15 +23,15 @@ function caculate_score(v_shares, created, S, T) {
 
 }
 
-var calculate_hot = function calculate_hot(v_shares, created) {
+let calculate_hot = function calculate_hot(v_shares, created) {
     return caculate_score(v_shares, created, S_hot, T_hot);
 }
 
-var calculate_trending = function calculate_trending(v_shares, created) {
+let calculate_trending = function calculate_trending(v_shares, created) {
     return caculate_score(v_shares, created, S_trending, T_trending);
 }
 
-var reputation = function reputation(reputation) {
+let reputation = function reputation(reputation) {
     if (reputation == null) return reputation;
       reputation = parseInt(reputation);
       let rep = String(reputation);

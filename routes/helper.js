@@ -6,12 +6,12 @@ var exports = module.exports = {};
  * @returns returns a new Object Array with top 3 likers.
  */
 function get_top_likers(object) {
-    var top_likers = [];
+    let top_likers = [];
     if (object.length !== 0) {
 
         for (let i = 0; i < 3; i++) {
             if (object[i] != null) {
-                top_likers.push("https://img.busy.org/@" + object[i]["voter"]);
+                top_likers.push(`https://img.busy.org/@${object[i].voter}`);
             }
         }
     }
@@ -25,14 +25,14 @@ function get_top_likers(object) {
  * @returns returns a boolean statement
  */
 function is_post_voted(username, object) {
-    var is_voted = false;
+    let is_voted = false;
     if (username) {
-        if (object["active_votes"].length === 0) {
+        if (object.active_votes.length === 0) {
             is_voted = false;
         }
 
         else {
-            let string = JSON.stringify(object["active_votes"], null, '\n')
+            let string = JSON.stringify(object.active_votes, null, '\n')
                              .replace(/"/g, '\\"')
                              .replace(/\n/g, '    ')
                              .replace(/(?:[ ]{4}((?:[ ]{4})*))/g, '\\n$1');
@@ -63,16 +63,15 @@ function is_post_voted(username, object) {
 }
 
 function is_following(username, object) {
-    var is_following = false;
+    let is_following = false;
     if (username) {
-        console.log(object["followers"])
-        if (object["followers"].length === 0) {
+        if (object.followers.length === 0) {
             is_following = false;
         }
 
         else {
-            for (let i = 0; i < object["followers"].length; i++) {
-                if (object["followers"][i].follower == username) {
+            for (let i = 0; i < object.followers.length; i++) {
+                if (object.followers[i].follower == username) {
                     is_following = true;
                 }
             }
@@ -88,14 +87,14 @@ function is_following(username, object) {
  * @returns returns a string with the image url
  */
 function get_body_image(post) {
-    var image;
+    let image;
 
     try {
-        image = post.json_metadata["image"][0]
+        image = post.json_metadata.image[0]
     }
 
     catch (e) {
-        var n = post.body.match(/([a-z\-_0-9\/\:\.]*\.(jpg|jpeg|png|gif))/i)
+        let n = post.body.match(/([a-z\-_0-9\/\:\.]*\.(jpg|jpeg|png|gif))/i)
         if (n === null) image = null;
         else {
             image = n[0];
@@ -111,8 +110,8 @@ function get_body_image(post) {
  * @returns Array with videos of the post 
  */
 function get_body_videos(post) {
-    var videos = null;
-    var v = post.body.trim().match(/^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/igm);
+    let videos = null;
+    let v = post.body.trim().match(/^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/igm);
     if (v !== null) {
         videos = v;
     }

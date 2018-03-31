@@ -1,10 +1,10 @@
-var Posts = require('../models/posts');
-var Accounts = require('../models/accounts');
-var Util = require('../utils/utils');
-var Helper = require('./helper');
-var steem = require('steem');
+const POSTS = require('../models/posts');
+const ACCOUNTS = require('../models/accounts');
+const UTIL = require('../utils/utils');
+const HELPER = require('./helper');
+const STEEM = require('steem');
 var exports = module.exports = {};
-var async = require('async');
+const async = require('async');
 
 /**
  * Method to get full text search of posts querying their title and body
@@ -12,85 +12,80 @@ var async = require('async');
  * @param {*} res 
  */
 function search_text(req, res) {
-    var limit = parseInt(req.query.limit);
-    var skip = parseInt(req.query.skip);
-    var username = req.query.username;
-    var text = req.query.search;
-
-    var cursor = Posts
-        .find(
-            {
-                "json_metadata.tags": "steemia",
-                $or: [
-                    { 'title': { $regex: text, $options: 'i' } },
-                    { 'body': { $regex: text, $options: 'i' } }
-                ]
-            }, {
-                "abs_rshares": 1,
-                "created": 1,
-                "author": 1,
-                "author_reputation": 1,
-                "title": 1,
-                "body": 1,
-                "url": 1,
-                "tags": 1,
-                "category": 1,
-                "children": 1,
-                "net_votes": 1,
-                "max_accepted_payout": 1,
-                "total_payout_value": 1,
-                "pending_payout_value": 1,
-                "active_votes": 1,
-                "json_metadata": 1
-            }
-        ).sort({ 'created': -1 }).limit(limit).skip(skip).lean().cursor()
-
-    var firstItem = true;
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    cursor.on('data', (doc) => {
-
-        doc = JSON.parse(JSON.stringify(doc));
-        // Check if user has voted this post.
-        doc["vote"] = Helper.is_post_voted(username, doc);
-
-        // Get body image of the post.
-        var image = Helper.get_body_image(doc);
-
-        // Get videos of the post
-        doc["videos"] = Helper.get_body_video(doc);
-
-        doc.total_payout_value["amount"] += doc.pending_payout_value["amount"];
-        doc.author_reputation = Util.reputation(doc.author_reputation);
-
-        doc.tags = doc.tags.filter((item, index, self) => self.indexOf(item) == index);
-
-        var top_likers = Helper.get_top_likers(doc.active_votes);
-
-        var item = {
-            author: doc.author,
-            avatar: "https://img.busy.org/@" + doc.author,
-            author_reputation: doc.author_reputation,
-            title: doc.title,
-            full_body: doc.body,
-            url: doc.url,
-            created: doc.created,
-            tags: doc.tags,
-            category: doc.category,
-            children: doc.children,
-            body: image,
-            vote: doc.vote,
-            net_votes: doc.net_votes,
-            max_accepted_payout: doc.max_accepted_payout["amount"],
-            total_payout_reward: doc.total_payout_value["amount"],
-            videos: doc.videos || null,
-            top_likers_avatars: top_likers
+    let username = req.query.username;
+    let text = req.query.search;
+    
+    POSTS.find(
+        {
+            'json_metadata.tags': 'steemia',
+            $or: [
+                { 'title': { $regex: text, $options: 'i' } },
+                { 'body': { $regex: text, $options: 'i' } }
+            ]
+        }, {
+            'abs_rshares': 1,
+            'created': 1,
+            'author': 1,
+            'author_reputation': 1,
+            'title': 1,
+            'body': 1,
+            'url': 1,
+            'tags': 1,
+            'category': 1,
+            'children': 1,
+            'net_votes': 1,
+            'max_accepted_payout': 1,
+            'total_payout_value': 1,
+            'pending_payout_value': 1,
+            'active_votes': 1,
+            'json_metadata': 1
         }
+    ).sort({ 'created': -1 }).limit(100).lean().exec((err, result) => {
 
-        res.write(firstItem ? (firstItem = false, '[') : ',');
-        res.write(JSON.stringify(item));
-    });
-    cursor.on('close', function () {
-        res.end(']');
+        let results = result.map(doc => {
+            doc = JSON.parse(JSON.stringify(doc));
+            // Check if user has voted this post.
+            doc.vote = HELPER.is_post_voted(username, doc);
+
+            // Get body image of the post.
+            let image = HELPER.get_body_image(doc);
+
+            // Get videos of the post
+            doc.videos = HELPER.get_body_video(doc);
+
+            doc.total_payout_value.amount += doc.pending_payout_value.amount;
+            doc.author_reputation = UTIL.reputation(doc.author_reputation);
+
+            doc.tags = doc.tags.filter((item, index, self) => self.indexOf(item) == index);
+
+            let top_likers = HELPER.get_top_likers(doc.active_votes);
+
+            return {
+                author: doc.author,
+                avatar: `https://img.busy.org/@${doc.author}`,
+                author_reputation: doc.author_reputation,
+                title: doc.title,
+                full_body: doc.body,
+                url: doc.url,
+                created: doc.created,
+                tags: doc.tags,
+                category: doc.category,
+                children: doc.children,
+                body: image,
+                vote: doc.vote,
+                net_likes: doc.net_votes,
+                net_votes: doc.net_votes,
+                max_accepted_payout: doc.max_accepted_payout.amount,
+                total_payout_reward: doc.total_payout_value.amount,
+                videos: doc.videos || null,
+                top_likers_avatars: top_likers
+            }
+        });
+
+        res.send({
+            results: results,
+            type: 'full_text_search'
+        });
     });
 }
 
@@ -100,93 +95,90 @@ function search_text(req, res) {
  * @param {*} res 
  */
 function search_tags(req, res) {
-    var limit = parseInt(req.query.limit);
-    var skip = parseInt(req.query.skip);
-    var username = req.query.username;
-    var text = req.query.search;
+    let limit = parseInt(req.query.limit);
+    let skip = parseInt(req.query.skip);
+    let username = req.query.username;
+    let text = req.query.search;
 
-    var cursor = Posts
+    POSTS
         .find(
             {
-                "json_metadata.tags": "steemia",
+                'json_metadata.tags': 'steemia',
                 $and: [
-                    { "json_metadata.tags": { $regex: text, $options: 'i' } }
+                    { 'json_metadata.tags': { $regex: text, $options: 'i' } }
                 ]
             }, {
-                "abs_rshares": 1,
-                "created": 1,
-                "author": 1,
-                "author_reputation": 1,
-                "title": 1,
-                "body": 1,
-                "url": 1,
-                "tags": 1,
-                "category": 1,
-                "children": 1,
-                "net_votes": 1,
-                "max_accepted_payout": 1,
-                "total_payout_value": 1,
-                "pending_payout_value": 1,
-                "active_votes": 1,
-                "json_metadata": 1
+                'abs_rshares': 1,
+                'created': 1,
+                'author': 1,
+                'author_reputation': 1,
+                'title': 1,
+                'body': 1,
+                'url': 1,
+                'tags': 1,
+                'category': 1,
+                'children': 1,
+                'net_votes': 1,
+                'max_accepted_payout': 1,
+                'total_payout_value': 1,
+                'pending_payout_value': 1,
+                'active_votes': 1,
+                'json_metadata': 1
             }
-        ).sort({ 'created': -1 }).limit(limit).skip(skip).lean().cursor();
+        ).sort({ 'created': -1 }).limit(100).lean().exec((err, result) => {
+            let results = result.map(post => {
+                post = JSON.parse(JSON.stringify(post));
+                // Check if user has voted this post.
+                post.vote = HELPER.is_post_voted(username, post);
 
-    var firstItem = true;
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    cursor.on('data', function (post) {
-        post = JSON.parse(JSON.stringify(post));
-        // Check if user has voted this post.
-        post["vote"] = Helper.is_post_voted(username, post);
+                // Get body image of the post.
+                let image = HELPER.get_body_image(post);
 
-        // Get body image of the post.
-        var image = Helper.get_body_image(post);
+                // Get videos of the post
+                post.videos = HELPER.get_body_video(post);
 
-        // Get videos of the post
-        post["videos"] = Helper.get_body_video(post);
+                post.total_payout_value.amount += post.pending_payout_value.amount;
+                post.author_reputation = UTIL.reputation(post.author_reputation);
 
-        post.total_payout_value["amount"] += post.pending_payout_value["amount"];
-        post.author_reputation = Util.reputation(post.author_reputation);
+                post.tags = post.tags.filter((item, index, self) => self.indexOf(item) == index);
 
-        post.tags = post.tags.filter((item, index, self) => self.indexOf(item) == index);
+                let top_likers = HELPER.get_top_likers(post.active_votes);
 
-        var top_likers = Helper.get_top_likers(post.active_votes);
+                return {
+                    author: post.author,
+                    avatar: `https://img.busy.org/@${post.author}`,
+                    author_reputation: post.author_reputation,
+                    title: post.title,
+                    full_body: post.body,
+                    url: post.url,
+                    created: post.created,
+                    tags: post.tags,
+                    category: post.category,
+                    children: post.children,
+                    body: image,
+                    vote: post.vote,
+                    net_likes: post.net_votes,
+                    net_votes: post.net_votes,
+                    max_accepted_payout: post.max_accepted_payout.amount,
+                    total_payout_reward: post.total_payout_value.amount,
+                    videos: post.videos || null,
+                    top_likers_avatars: top_likers
+                }
+            });
 
-        var item = {
-            author: post.author,
-            avatar: "https://img.busy.org/@" + post.author,
-            author_reputation: post.author_reputation,
-            title: post.title,
-            full_body: post.body,
-            url: post.url,
-            created: post.created,
-            tags: post.tags,
-            category: post.category,
-            children: post.children,
-            body: image,
-            vote: post.vote,
-            net_votes: post.net_votes,
-            max_accepted_payout: post.max_accepted_payout["amount"],
-            total_payout_reward: post.total_payout_value["amount"],
-            videos: post.videos || null,
-            top_likers_avatars: top_likers
-        }
+            res.send({
+                results: results,
+                type: 'tags_search'
 
-        res.write(firstItem ? (firstItem = false, '[') : ',');
-        res.write(JSON.stringify(item));
-    });
-
-    cursor.on('close', function() {
-        res.end(']');
-    });
-       
+            })
+        });
 }
 
 async function search_users(req, res) {
-    var username = req.query.username;
-    var query = req.query.name;
+    let username = req.query.username;
+    let query = req.query.search;
 
-    Accounts
+    ACCOUNTS
         .find({
             $or: [
                 { 'name': { $regex: query, $options: 'i' } },
@@ -194,27 +186,29 @@ async function search_users(req, res) {
         })
         .lean()
         .exec(async (err, users) => {
-            var results = await call_followers(users);
+            let results = await call_followers(users);
 
-            var final = results.map(user => {
-                let following = Helper.is_following(username, user);
-                user["reputation"] = Util.reputation(user["reputation"]);
+            let final = results.map(user => {
+                let following = HELPER.is_following(username, user);
+                user.reputation = UTIL.reputation(user.reputation);
 
                 return {
-                    name: user["name"],
-                    reputation: user["reputation"],
+                    name: user.name,
+                    avatar: `https://img.busy.org/@${user.name}`,
+                    reputation: user.reputation,
                     has_followed: following,
                 }
             });
             res.send({
-                results: final
+                results: final,
+                type: 'user_search'
             });
         });
 }
 
 async function get_followers(user) {
     return new Promise(resolve => {
-        steem.api.getFollowers(user.toString(), '', 'blog', 1000, (err, res) => {
+        STEEM.api.getFollowers(user.toString(), '', 'blog', 1000, (err, res) => {
             resolve(res)
         });
     });
@@ -226,17 +220,16 @@ async function call_followers(users) {
         try {
             users[i] = JSON.parse(JSON.stringify(users[i]));
 
-            let success = await get_followers(users[i]["name"]);
+            let success = await get_followers(users[i].name);
             if (success) {
-                users[i]["followers"] = success
+                users[i].followers = success;
                 users_data.push(users[i]);
             }
         } catch (err) {
-            console.log(err)
         }
     }
 
-    return users_data
+    return users_data;
 
 }
 

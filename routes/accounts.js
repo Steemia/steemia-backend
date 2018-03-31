@@ -1,8 +1,8 @@
 var exports = module.exports = {};
-var steem = require('steem');
-var Util = require('../utils/utils');
-var Accounts = require('../models/accounts');
-var Posts = require('../models/posts');
+const STEEM = require('steem');
+const UTIL = require('../utils/utils');
+const ACCOUNTS = require('../models/accounts');
+const POSTS = require('../models/posts');
 
 /**
  * Method to check post count in Steemia
@@ -10,7 +10,7 @@ var Posts = require('../models/posts');
  */
 async function _get_posts_count(username) {
     return new Promise(resolve => {
-        Posts.count({ author: username, "json_metadata.tags": "steemia" }, (err, count) => {
+        POSTS.count({ author: username, 'json_metadata.tags': 'steemia' }, (err, count) => {
             if (count) resolve(count);
             else resolve(err);
         });
@@ -24,7 +24,7 @@ async function _get_posts_count(username) {
  */
 async function _is_following(username, target) {
     return new Promise(resolve => {
-        steem.api.getFollowers(username, target, 'blog', 1, (err, followers) => {
+        STEEM.api.getFollowers(username, target, 'blog', 1, (err, followers) => {
             if (followers[0].follower == target) resolve(1);
             else resolve(0);
         });
@@ -37,7 +37,7 @@ async function _is_following(username, target) {
  */
 async function _get_follow_count(username) {
     return new Promise(resolve => {
-        steem.api.getFollowCount(username, (err, follow) => {
+        STEEM.api.getFollowCount(username, (err, follow) => {
             if (follow) resolve(follow)
             else resolve(err);
         });
@@ -50,7 +50,7 @@ async function _get_follow_count(username) {
  */
 async function _get_account(username) {
     return new Promise(resolve => {
-        steem.api.getAccounts([username], (err, res) => {
+        STEEM.api.getAccounts([username], (err, res) => {
             if (res) {
 
                 let result = res[0];
@@ -59,19 +59,19 @@ async function _get_account(username) {
                 }
 
                 catch (e) {
-                    resolve("wrong user")
+                    resolve('wrong user')
                 }
 
-                result.reputation = Util.reputation(result.reputation);
-                var steemPower = parseFloat(result.reward_vesting_steem) * (parseFloat(result.vesting_shares) / parseFloat(result.reward_vesting_balance));
+                result.reputation = UTIL.reputation(result.reputation);
+                let steemPower = parseFloat(result.reward_vesting_steem) * (parseFloat(result.vesting_shares) / parseFloat(result.reward_vesting_balance));
 
-                var balance = steem.formatter.estimateAccountValue(result);
+                let balance = STEEM.formatter.estimateAccountValue(result);
                 balance.then(data => {
                     let r = {
                             created: result.created,
                             reputation: result.reputation,
-                            username: result["name"],
-                            profile_image: "https://img.busy.org/@" + result.name,
+                            username: result.name,
+                            profile_image: `https://img.busy.org/@${result.name}`,
                             has_followed: 0,
                             voting_power: parseFloat(steemPower.toFixed(2)),
                             estimated_balance: data,
@@ -103,27 +103,27 @@ async function _get_account(username) {
  * @param {*} res 
  */
 async function get_account(req, res) {
-    var user = req.query.user || null;
+    let user = req.query.user || null;
     user = user.toString();
-    var username = req.query.username;
+    let username = req.query.username;
 
     // Get account data
-    var account = await _get_account(user);
+    let account = await _get_account(user);
 
     if (account !== "wrong user") {
         // Get follow stats
-        var follow = await _get_follow_count(user);
+        let follow = await _get_follow_count(user);
 
         account.followers_count = follow.follower_count;
         account.following_count = follow.following_count;
 
         // Check if the current user has followed this user
-        var has_followed = await _is_following(user, username);
+        let has_followed = await _is_following(user, username);
 
         account.has_followed = has_followed;
 
         // Get post count of this user in steemia
-        var post_count = await _get_posts_count(user);
+        let post_count = await _get_posts_count(user);
 
         account.post_count = post_count;
 
@@ -132,10 +132,9 @@ async function get_account(req, res) {
 
     else {
         res.send({
-            error: "invalid user"
+            error: 'invalid user'
         });
     }
-
 
 }
 

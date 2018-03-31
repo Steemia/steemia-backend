@@ -1,8 +1,8 @@
 var exports = module.exports = {};
-var Comments = require('../models/comments');
-var Helper = require('./helper');
-var Util = require('../utils/utils');
-var steem = require('steem');
+const COMMENTS = require('../models/comments');
+const HELPER = require('./helper');
+const UTIL = require('../utils/utils');
+const STEEM = require('steem');
 
 function get_comments(req, res) {
     let username = req.query.username;
@@ -11,28 +11,28 @@ function get_comments(req, res) {
     to_delete = to_delete.replace("@", '');
     
     let comments = [];
-    steem.api.getState(permlink, (err, results) => {
+    STEEM.api.getState(permlink, (err, results) => {
         results = JSON.parse(JSON.stringify(results));
         delete results.content[to_delete];
 
-        var result = Object.values(results.content)
-        result.sort(function(a, b) { 
+        let result = Object.values(results.content)
+        result.sort((a, b) => { 
             return b.id > a.id;   // <== to compare string values
         });
 
-        var final = result.map(comment => {
+        let final = result.map(comment => {
             return {
                 body: comment.body,
-                avatar: "https://img.busy.org/@" + comment.author,
+                avatar: `https://img.busy.org/@${comment.author}`,
                 created: comment.created,
                 url: comment.url,
-                author_reputation: Util.reputation(comment.author_reputation),
+                author_reputation: UTIL.reputation(comment.author_reputation),
                 author: comment.author,
                 category: comment.category,
                 net_votes: comment.net_votes,
                 net_likes: comment.net_likes,
                 pending_payout_value: parseFloat(comment.total_payout_value) + parseFloat(comment.pending_payout_value),
-                vote: Helper.is_post_voted(username, comment),
+                vote: HELPER.is_post_voted(username, comment),
                 children: comment.children
             }
         });
@@ -51,36 +51,36 @@ function get_comments(req, res) {
  * @param {*} res 
  */
 function get_comments_rec(req, res) {
-    var limit = parseInt(req.query.limit);
-    var skip = parseInt(req.query.skip);
-    var username = req.query.username;
-    var url = req.params.url;
+    let limit = parseInt(req.query.limit);
+    let skip = parseInt(req.query.skip);
+    let username = req.query.username;
+    let url = req.params.url;
 
-    Comments
+    COMMENTS
         .find({ category: "steemia", parent_permlink: url })
         .sort({ 'created': -1 })
         .limit(limit)
         .skip(skip)
         .exec((err, comments) => {
 
-            var results = comments.map(comment => {
+            let results = comments.map(comment => {
 
                 comment = JSON.parse(JSON.stringify(comment));
-                comment["vote"] = Helper.is_post_voted(username, comment);
-                comment.total_payout_value["amount"] += comment.pending_payout_value["amount"];
-                comment.author_reputation = Util.reputation(comment.author_reputation);
-                comment["vote"] = Helper.is_post_voted(username, comment);
+                comment.vote = HELPER.is_post_voted(username, comment);
+                comment.total_payout_value.amount += comment.pending_payout_value.amount;
+                comment.author_reputation = UTIL.reputation(comment.author_reputation);
+                comment.vote = HELPER.is_post_voted(username, comment);
 
                 return {
                     author: comment.author,
-                    avatar: "https://img.busy.org/@" + comment.author,
+                    avatar: `https://img.busy.org/@${comment.author}`,
                     full_body: comment.body,
                     author_reputation: comment.author_reputation,
                     created: comment.created,
                     children: comment.children,
-                    vote: comment["vote"],
-                    replies: comment["replies"],
-                    url: comment["permlink"]
+                    vote: comment.vote,
+                    replies: comment.replies,
+                    url: comment.permlink
                 };
             });
             res.send({
@@ -95,18 +95,18 @@ function get_comments_rec(req, res) {
  * @param {*} res 
  */
 function get_votes(req, res) {
-    var url = req.query.permlink;
-    var author = req.query.author;
-    steem.api.getActiveVotes(author, url, (err, votes) => {
-        var results = votes.map(voter => {
-            voter["reputation"] = Util.reputation(voter["reputation"]);
-            voter["percent"] = voter["percent"] / 100;
+    let url = req.query.permlink;
+    let author = req.query.author;
+    STEEM.api.getActiveVotes(author, url, (err, votes) => {
+        let results = votes.map(voter => {
+            voter.reputation = UTIL.reputation(voter.reputation);
+            voter.percent = voter.percent / 100;
 
             return {
-                profile_image: "https://img.busy.org/@" + voter["voter"],
-                username: voter["voter"],
-                reputation: voter["reputation"],
-                percent: voter["percent"]
+                profile_image: `https://img.busy.org/@${voter.voter}`,
+                username: voter.voter,
+                reputation: voter.reputation,
+                percent: voter.percent
             }
 
         });
