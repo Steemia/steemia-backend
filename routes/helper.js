@@ -118,8 +118,44 @@ function get_body_videos(post) {
     return videos
 }
 
+/**
+ * Method to replace images with markdown
+ * @param {String} body 
+ */
+function parse_body(body) {
+
+    // Try to replace all markdown images with plain url images
+    try {
+        let md_images = body.match(/!\[.*?\]\((.*?)\)/g); // Returns an array with markdown images
+
+        // Replace image markdown with only urls
+        md_images.map(image => {
+            body = body.replace(image, image.match(/!\[.*?\]\((.*?)\)/)[1]);
+        });
+    } catch(e) {}
+
+    // Try to replace all image tags with plain url image
+    try {
+
+        let images = body.match(/<img .*?>/g); // Returns an array with the images
+
+        // Replace image tags with only urls
+        images.map(image => {
+            body = body.replace(image, image.match(/<img.*?src=['"](.*?)['"]/)[1]);
+        });
+    } catch(e) {}
+
+    // Replace all images urls with image tag (Including IPFS images)
+    body = body.replace(
+        /https?:\/\/(?:[-a-zA-Z0-9._]*[-a-zA-Z0-9])(?::\d{2,5})?(?:[/?#](?:[^\s"'<>\][()]*[^\s"'<>\][().,])?(?:(?:\.(?:tiff?|jpe?g|gif|png|svg|ico)|ipfs\/[a-z\d]{40,})))/gi, 
+        '![SSR_IMAGE]($&)');
+
+    return body;
+}
+
 exports.get_top_likers = get_top_likers;
 exports.is_post_voted = is_post_voted;
 exports.get_body_image = get_body_image;
 exports.get_body_video = get_body_videos;
 exports.is_following = is_following;
+exports.parse_body = parse_body;

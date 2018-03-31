@@ -2,7 +2,13 @@ const POSTS = require('../models/posts');
 const UTIL = require('../utils/utils');
 const HELPER = require('./helper');
 const STEEM = require('steem');
-
+const MARKDOWN = require('remarkable');
+var md = new MARKDOWN('full', {
+    html: true,
+    linkify: true,
+    breaks: false,
+    typographer: true,
+  });
 var exports = module.exports = {};
 
 /**
@@ -62,6 +68,8 @@ function _get_posts(req, res, type, tag) {
 
                 let top_likers = HELPER.get_top_likers(post.active_votes);
 
+                post.body = HELPER.parse_body(post.body);
+                
                 return _get_response(post, image, top_likers);
             });
 
@@ -102,7 +110,7 @@ function _get_response(post, image, top_likers) {
         avatar: `https://img.busy.org/@${post.author}`,
         author_reputation: post.author_reputation,
         title: post.title,
-        full_body: post.body,
+        full_body: md.render(post.body),
         url: post.url,
         created: post.created,
         tags: post.json_metadata.tags,
@@ -210,6 +218,8 @@ function get_profile_posts(req, res) {
 
             let top_likers = HELPER.get_top_likers(post.active_votes);
 
+            post.body = HELPER.parse_body(post.body);
+
             return _get_response(post, image, top_likers);
         });
 
@@ -261,6 +271,8 @@ function get_post_single(req, res) {
         post.author_reputation = UTIL.reputation(post.author_reputation);
 
         let top_likers = HELPER.get_top_likers(post.active_votes);
+
+        post.body = HELPER.parse_body(post.body);
 
         res.send(_get_response(post, image, top_likers));
 
@@ -323,6 +335,8 @@ function get_feed(req, res) {
                 post.author_reputation = UTIL.reputation(post.author_reputation);
 
                 let top_likers = HELPER.get_top_likers(post.active_votes);
+
+                post.body = HELPER.parse_body(post.body);
 
                 return _get_response(post, image, top_likers);
             });

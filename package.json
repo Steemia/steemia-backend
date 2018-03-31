@@ -16,6 +16,7 @@
     "mongodb": "^3.0.5",
     "mongojs": "^2.5.0",
     "mongoose": "^5.0.11",
+    "remarkable": "^1.7.1",
     "request": "^2.85.0",
     "steem": "^0.7.1",
     "xmlhttprequest": "^1.8.0"
