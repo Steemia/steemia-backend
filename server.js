@@ -87,7 +87,50 @@ MONGOOSE.connection.on('connected', () => {
 
 // If the connection throws an error
 MONGOOSE.connection.on('error', (err) => {
-    console.log('Mongoose default connection error: ' + err);
+    // New Posts Endpoint
+    APP.get('/posts/new', POST_ROUTES.get_new);
+
+    // Trending Posts Endpoint
+    APP.get('/posts/trending', POST_ROUTES.get_trending);
+
+    // Trending Posts Endpoint
+    APP.get('/posts/hot', POST_ROUTES.get_hot);
+
+    // Endpoint to get post comments
+    APP.get('/posts/comments', COMMENT_VOTES_ROUTES.get_comments);
+
+    // Endpoint to get post votes
+    APP.get('/posts/votes', COMMENT_VOTES_ROUTES.get_votes);
+
+    // Endpoint to get posts from user blog
+    APP.get('/posts/blog', POST_ROUTES.get_profile_posts);
+
+    // Endpoint to get post search
+    APP.get('/posts/search', SEARCH_ROUTES.search_text);
+
+    // Endpoint to get post tag search
+    APP.get('/tags/search', SEARCH_ROUTES.search_tags);
+
+    // Endpoint to search for users
+    APP.get('/users/search', SEARCH_ROUTES.search_users);
+
+    // Endpoint to search user info
+    APP.get('/users/info', ACCOUNTS_ROUTES.get_account);
+
+    // Endpoint to get user feed
+    APP.get('/posts/feed', POST_ROUTES.get_feed);
+
+    // Endpoint to get post single
+    APP.get('/posts/info', POST_ROUTES.get_post_single);
+
+    // Handle the base path
+    APP.get('/', (req, res) => {
+        res.send('Steemia API');
+    });
+
+    APP.listen(PORT, () => {
+        console.log('Server listening on port ' + PORT);
+    });
 });
 
 // When the connection is disconnected
