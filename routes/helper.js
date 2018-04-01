@@ -153,9 +153,24 @@ function parse_body(body) {
     return body;
 }
 
+/**
+ * Method to generate JSON for error
+ * @param {Number} code 
+ * @param {String} msg 
+ * @param {String} type
+ */
+function _prepare_error(code, msg, type) {
+    return {
+        status: code,
+        message: msg,
+        type: type
+    }
+}
+
 exports.get_top_likers = get_top_likers;
 exports.is_post_voted = is_post_voted;
 exports.get_body_image = get_body_image;
 exports.get_body_video = get_body_videos;
 exports.is_following = is_following;
 exports.parse_body = parse_body;
+exports._prepare_error = _prepare_error;

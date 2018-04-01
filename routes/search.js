@@ -1,209 +1,251 @@
-const POSTS = require('../models/posts');
-const ACCOUNTS = require('../models/accounts');
 const UTIL = require('../utils/utils');
 const HELPER = require('./helper');
 const STEEM = require('steem');
-var exports = module.exports = {};
-const async = require('async');
+var express = require('express');
+var router = express.Router();
+var request = require('request');
+const MARKDOWN = require('remarkable');
+var md = new MARKDOWN('full', {
+    html: true,
+    linkify: true,
+    breaks: false,
+    typographer: true,
+});
+
+const ASK_STEEM = 'https://api.asksteem.com/';
 
 /**
  * Method to get full text search of posts querying their title and body
- * @param {*} req 
- * @param {*} res 
  */
-function search_text(req, res) {
+router.get('/posts', async (req, res, next) => {
+
     let username = req.query.username;
     let text = req.query.search;
-    
-    POSTS.find(
-        {
-            'json_metadata.tags': 'steemia',
-            $or: [
-                { 'title': { $regex: text, $options: 'i' } },
-                { 'body': { $regex: text, $options: 'i' } }
-            ]
-        }, {
-            'abs_rshares': 1,
-            'created': 1,
-            'author': 1,
-            'author_reputation': 1,
-            'title': 1,
-            'body': 1,
-            'url': 1,
-            'tags': 1,
-            'category': 1,
-            'children': 1,
-            'net_votes': 1,
-            'max_accepted_payout': 1,
-            'total_payout_value': 1,
-            'pending_payout_value': 1,
-            'active_votes': 1,
-            'json_metadata': 1
+    let page = req.query.page;
+
+    if (text === null || text === undefined || text === '') {
+        if (page === null || page === undefined || page === '') {
+            return next(HELPER._prepare_error(500, 'Required parameters "search" and "page" are missing.', 'Internal'));
         }
-    ).sort({ 'created': -1 }).limit(100).lean().exec((err, result) => {
+        else {
+            if (parseInt(page) > 10) {
+                return next(HELPER._prepare_error(500, 'Required parameter "page" cannot be larger than 10', 'Internal'));
+            }
+            return next(HELPER._prepare_error(500, 'Required parameter "search" is missing.', 'Internal'));
+        }
+        
+    }
+    else {
+        if (page === null || page === undefined || page === ''){
+            return next(HELPER._prepare_error(500, 'Required parameter "page" is missing.', 'Internal'));
+        }
+        else {
+            if (parseInt(page) > 10) {
+                return next(HELPER._prepare_error(500, 'Required parameter "page" cannot be larger than 10', 'Internal'));
+            }
+        }
+    }
 
-        let results = result.map(doc => {
-            doc = JSON.parse(JSON.stringify(doc));
-            // Check if user has voted this post.
-            doc.vote = HELPER.is_post_voted(username, doc);
+    request(ASK_STEEM + 'search?q=' + text + '&types=post&sort_by=created&pg=' + page, (error, response, body) => {
 
-            // Get body image of the post.
-            let image = HELPER.get_body_image(doc);
+        var data = JSON.parse(body);
+        var results = data.results;
 
-            // Get videos of the post
-            doc.videos = HELPER.get_body_video(doc);
+        let final = results.map(async post => {
+            post = JSON.parse(JSON.stringify(post));
 
-            doc.total_payout_value.amount += doc.pending_payout_value.amount;
-            doc.author_reputation = UTIL.reputation(doc.author_reputation);
+            let missing_data = await _get_body(post.author, post.permlink);
+            post.active_votes = missing_data.active_votes;
 
-            doc.tags = doc.tags.filter((item, index, self) => self.indexOf(item) == index);
+            post.vote = HELPER.is_post_voted(username, post);
+            post.body = missing_data.body;
+            post.body = HELPER.parse_body(post.body);
 
-            let top_likers = HELPER.get_top_likers(doc.active_votes);
+            let image = HELPER.get_body_image(post);
+            post.videos = HELPER.get_body_video(post);
+
+            let top_likers = HELPER.get_top_likers(post.active_votes);
 
             return {
-                author: doc.author,
-                avatar: `https://img.busy.org/@${doc.author}`,
-                author_reputation: doc.author_reputation,
-                title: doc.title,
-                full_body: doc.body,
-                url: doc.url,
-                created: doc.created,
-                tags: doc.tags,
-                category: doc.category,
-                children: doc.children,
+                author: post.author,
+                avatar: `https://img.busy.org/@${post.author}`,
+                author_reputation: UTIL.reputation(missing_data.author_reputation),
+                title: post.title,
+                full_body: md.render(post.body),
+                url: post.permlink,
+                created: post.created,
+                tags: post.tags,
+                category: post.tags[0],
+                children: post.children,
                 body: image,
-                vote: doc.vote,
-                net_likes: doc.net_votes,
-                net_votes: doc.net_votes,
-                max_accepted_payout: doc.max_accepted_payout.amount,
-                total_payout_reward: doc.total_payout_value.amount,
-                videos: doc.videos || null,
+                vote: post.vote,
+                net_likes: post.net_votes,
+                net_votes: post.net_votes,
+                max_accepted_payout: parseFloat(missing_data.max_accepted_payout),
+                total_payout_reward: parseFloat(missing_data.total_payout_value) + parseFloat(missing_data.pending_payout_value),
+                videos: post.videos || null,
                 top_likers_avatars: top_likers
             }
         });
 
-        res.send({
-            results: results,
-            type: 'full_text_search'
+        Promise.all(final).then((completed) => {
+            res.send({
+                results: completed,
+                type: 'full_text_search'
+            })
+        });
+    });
+});
+
+/**
+ * Method to search posts by tag
+ */
+router.get('/tags', (req, res, next) => {
+    let username = req.query.username;
+    let text = req.query.search;
+    let page = req.query.page;
+
+    if (text === null || text === undefined || text === '') {
+        if (page === null || page === undefined || page === '') {
+            return next(HELPER._prepare_error(500, 'Required parameters "search" and "page" are missing.', 'Internal'));
+        }
+        else {
+            if (parseInt(page) > 10) {
+                return next(HELPER._prepare_error(500, 'Required parameter "page" cannot be larger than 10', 'Internal'));
+            }
+            return next(HELPER._prepare_error(500, 'Required parameter "search" is missing.', 'Internal'));
+        }
+        
+    }
+
+    else {
+        if (page === null || page === undefined || page === ''){
+            return next(HELPER._prepare_error(500, 'Required parameter "page" is missing.', 'Internal'));
+        }
+        else {
+            if (parseInt(page) > 10) {
+                return next(HELPER._prepare_error(500, 'Required parameter "page" cannot be larger than 10', 'Internal'));
+            }
+        }
+    }
+
+    request(ASK_STEEM + 'search?q=tags%3A' + text + '&types=post&sort_by=created&pg=' + page, (error, response, body) => {
+
+        var data = JSON.parse(body);
+        var results = data.results;
+
+        let final = results.map(async post => {
+            post = JSON.parse(JSON.stringify(post));
+
+            let missing_data = await _get_body(post.author, post.permlink);
+            post.active_votes = missing_data.active_votes;
+
+            post.vote = HELPER.is_post_voted(username, post);
+            post.body = missing_data.body;
+            post.body = HELPER.parse_body(post.body);
+
+            missing_data.total_payout_value.amount += missing_data.pending_payout_value.amount;
+            missing_data.author_reputation = UTIL.reputation(missing_data.author_reputation);
+
+            let image = HELPER.get_body_image(post);
+            post.videos = HELPER.get_body_video(post);
+
+            let top_likers = HELPER.get_top_likers(post.active_votes);
+
+            return {
+                author: post.author,
+                avatar: `https://img.busy.org/@${post.author}`,
+                author_reputation: UTIL.reputation(missing_data.author_reputation),
+                title: post.title,
+                full_body: md.render(post.body),
+                url: post.permlink,
+                created: post.created,
+                tags: post.tags,
+                category: post.tags[0],
+                children: post.children,
+                body: image,
+                vote: post.vote,
+                net_likes: post.net_votes,
+                net_votes: post.net_votes,
+                max_accepted_payout: parseFloat(missing_data.max_accepted_payout),
+                total_payout_reward: parseFloat(missing_data.total_payout_value) + parseFloat(missing_data.pending_payout_value),
+                videos: post.videos || null,
+                top_likers_avatars: top_likers
+            }
+        });
+
+        Promise.all(final).then((completed) => {
+            res.send({
+                results: completed,
+                type: 'tags_search'
+            })
+        });
+    });
+});
+
+/**
+ * Method to search for users
+ */
+router.get('/users', async (req, res, next) => {
+    let username = req.query.username;
+    let text = req.query.search;
+
+    if (text === null || text === undefined || text === '') {
+        return next(HELPER._prepare_error(500, 'Required parameter "search" is missing.', 'Internal'));
+    }
+
+    STEEM.api.lookupAccounts(text, 100, async (err, result) => {
+        let results = result.map(async user => {
+            let has_followed = await _is_following(user.toString(), username);
+
+            return {
+                name: user,
+                avatar: `https://img.busy.org/@${user}`,
+                reputation: null,
+                has_followed: has_followed
+            }
+
+        });
+
+        Promise.all(results).then(completed => {
+            res.send({
+                results: completed,
+                type: 'user_search'
+            });
+        });
+    });
+});
+
+/**
+ * Method to check if the logged in user is following the queried user
+ * @param {String} username 
+ * @param {String} target 
+ */
+async function _is_following(username, target) {
+    return new Promise(resolve => {
+        STEEM.api.getFollowers(username, target, 'blog', 1, (err, followers) => {
+            try {
+                if (followers[0].follower == target) resolve(1);
+                else resolve(0);
+            }
+            catch(e) { resolve(0) }
+            
         });
     });
 }
 
 /**
- * Method to search posts by tag
- * @param {*} req 
- * @param {*} res 
+ * Method to get post data
+ * @param {String} author 
+ * @param {String} permlink 
  */
-function search_tags(req, res) {
-    let limit = parseInt(req.query.limit);
-    let skip = parseInt(req.query.skip);
-    let username = req.query.username;
-    let text = req.query.search;
-
-    POSTS
-        .find(
-            {
-                'json_metadata.tags': 'steemia',
-                $and: [
-                    { 'json_metadata.tags': { $regex: text, $options: 'i' } }
-                ]
-            }, {
-                'abs_rshares': 1,
-                'created': 1,
-                'author': 1,
-                'author_reputation': 1,
-                'title': 1,
-                'body': 1,
-                'url': 1,
-                'tags': 1,
-                'category': 1,
-                'children': 1,
-                'net_votes': 1,
-                'max_accepted_payout': 1,
-                'total_payout_value': 1,
-                'pending_payout_value': 1,
-                'active_votes': 1,
-                'json_metadata': 1
-            }
-        ).sort({ 'created': -1 }).limit(100).lean().exec((err, result) => {
-            let results = result.map(post => {
-                post = JSON.parse(JSON.stringify(post));
-                // Check if user has voted this post.
-                post.vote = HELPER.is_post_voted(username, post);
-
-                // Get body image of the post.
-                let image = HELPER.get_body_image(post);
-
-                // Get videos of the post
-                post.videos = HELPER.get_body_video(post);
-
-                post.total_payout_value.amount += post.pending_payout_value.amount;
-                post.author_reputation = UTIL.reputation(post.author_reputation);
-
-                post.tags = post.tags.filter((item, index, self) => self.indexOf(item) == index);
-
-                let top_likers = HELPER.get_top_likers(post.active_votes);
-
-                return {
-                    author: post.author,
-                    avatar: `https://img.busy.org/@${post.author}`,
-                    author_reputation: post.author_reputation,
-                    title: post.title,
-                    full_body: post.body,
-                    url: post.url,
-                    created: post.created,
-                    tags: post.tags,
-                    category: post.category,
-                    children: post.children,
-                    body: image,
-                    vote: post.vote,
-                    net_likes: post.net_votes,
-                    net_votes: post.net_votes,
-                    max_accepted_payout: post.max_accepted_payout.amount,
-                    total_payout_reward: post.total_payout_value.amount,
-                    videos: post.videos || null,
-                    top_likers_avatars: top_likers
-                }
-            });
-
-            res.send({
-                results: results,
-                type: 'tags_search'
-
-            })
+async function _get_body(author, permlink) {
+    return new Promise(resolve => {
+        STEEM.api.getContent(author, permlink, (err, result) => {
+            if (result) resolve(result);
+            else resolve(err)
         });
-}
-
-async function search_users(req, res) {
-    let username = req.query.username;
-    let query = req.query.search;
-
-    ACCOUNTS
-        .find({
-            $or: [
-                { 'name': { $regex: query, $options: 'i' } },
-            ]
-        })
-        .lean()
-        .exec(async (err, users) => {
-            let results = await call_followers(users);
-
-            let final = results.map(user => {
-                let following = HELPER.is_following(username, user);
-                user.reputation = UTIL.reputation(user.reputation);
-
-                return {
-                    name: user.name,
-                    avatar: `https://img.busy.org/@${user.name}`,
-                    reputation: user.reputation,
-                    has_followed: following,
-                }
-            });
-            res.send({
-                results: final,
-                type: 'user_search'
-            });
-        });
+    });
 }
 
 async function get_followers(user) {
@@ -225,14 +267,9 @@ async function call_followers(users) {
                 users[i].followers = success;
                 users_data.push(users[i]);
             }
-        } catch (err) {
-        }
+        } catch (err) {}
     }
-
     return users_data;
-
 }
 
-exports.search_text = search_text;
-exports.search_tags = search_tags;
-exports.search_users = search_users;
+module.exports = router;
