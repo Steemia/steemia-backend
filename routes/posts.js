@@ -70,6 +70,8 @@ function _get_posts(req, res, next, type, tag) {
                 post.total_payout_value.amount += post.pending_payout_value.amount;
                 post.author_reputation = UTIL.reputation(post.author_reputation);
 
+                post.nsfw = post.json_metadata.tags.includes('nsfw');
+
                 let top_likers = HELPER.get_top_likers(post.active_votes);
 
                 post.body = HELPER.parse_body(post.body);
@@ -125,6 +127,7 @@ function _get_response(post, image, top_likers) {
         max_accepted_payout: parseFloat(post.max_accepted_payout),
         total_payout_reward: parseFloat(post.total_payout_value) + parseFloat(post.pending_payout_value),
         videos: post.videos || null,
+        is_nsfw: post.nsfw,
         video_only: post.video_only,
         top_likers_avatars: top_likers
     };
@@ -216,6 +219,8 @@ router.get('/info', (req, res, next) => {
 
         let top_likers = HELPER.get_top_likers(post.active_votes);
 
+        post.nsfw = post.json_metadata.tags.includes('nsfw');
+
         post.body = HELPER.parse_body(post.body);
 
         res.send(_get_response(post, image, top_likers));
@@ -294,6 +299,8 @@ router.get('/feed', (req, res, next) => {
                 let top_likers = HELPER.get_top_likers(post.active_votes);
 
                 post.body = HELPER.parse_body(post.body);
+
+                post.nsfw = post.json_metadata.tags.includes('nsfw');
 
                 return _get_response(post, image, top_likers);
             });
