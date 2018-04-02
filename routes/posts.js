@@ -74,6 +74,14 @@ function _get_posts(req, res, next, type, tag) {
                     post.nsfw = post.json_metadata.tags.includes('nsfw');
     
                     let top_likers = HELPER.get_top_likers(post.active_votes);
+
+                    if (post.reblogged_by.length > 0) {
+                        post.reblogged_by = post.reblogged_by[0];
+                    }
+
+                    else {
+                        post.reblogged_by = null;
+                    }
     
                     post.body = HELPER.parse_body(post.body);
     
@@ -104,6 +112,7 @@ function _get_posts(req, res, next, type, tag) {
             }
         }
         catch(e) {
+            console.log(e)
             res.send({
                 results: [],
                 offset: null,
@@ -124,6 +133,7 @@ function _get_response(post, image, top_likers) {
     return {
         author: post.author,
         avatar: `https://img.busy.org/@${post.author}`,
+        reblogged_by: post.reblogged_by,
         author_reputation: post.author_reputation,
         title: post.title,
         full_body: md.render(post.body),
@@ -230,6 +240,14 @@ router.get('/info', (req, res, next) => {
 
         let top_likers = HELPER.get_top_likers(post.active_votes);
 
+        if (post.reblogged_by.length > 0) {
+            post.reblogged_by = post.reblogged_by[0];
+        }
+
+        else {
+            post.reblogged_by = null;
+        }
+
         post.nsfw = post.json_metadata.tags.includes('nsfw');
 
         post.body = HELPER.parse_body(post.body);
@@ -308,6 +326,14 @@ router.get('/feed', (req, res, next) => {
                 post.author_reputation = UTIL.reputation(post.author_reputation);
 
                 let top_likers = HELPER.get_top_likers(post.active_votes);
+
+                if (post.reblogged_by.length > 0) {
+                    post.reblogged_by = post.reblogged_by[0];
+                }
+
+                else {
+                    post.reblogged_by = null;
+                }
 
                 post.body = HELPER.parse_body(post.body);
 
