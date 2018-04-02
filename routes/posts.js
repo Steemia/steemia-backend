@@ -39,68 +39,79 @@ function _get_posts(req, res, next, type, tag) {
 
     STEEM.api[type](object, (err, posts) => {
 
-        if (posts.length != 1) {
-            let result = posts.map(post => {
-
-                post.json_metadata = JSON.parse(post.json_metadata);
-
-                // Check if user has voted this post.
-                post["vote"] = HELPER.is_post_voted(username, post);
-
-                // Get body image of the post.
-                let image = HELPER.get_body_image(post);
-
-                // Get videos of the post
-                post.videos = HELPER.get_body_video(post);
-
-                if (post.videos !== null) {
-                    if (post.videos.length == 1 && post.body.trim() == post.videos[0]) {
-                        post.video_only = true;
+        try {
+            if (posts.length != 1) {
+                let result = posts.map(post => {
+    
+                    post.json_metadata = JSON.parse(post.json_metadata);
+    
+                    // Check if user has voted this post.
+                    post["vote"] = HELPER.is_post_voted(username, post);
+    
+                    // Get body image of the post.
+                    let image = HELPER.get_body_image(post);
+    
+                    // Get videos of the post
+                    post.videos = HELPER.get_body_video(post);
+    
+                    if (post.videos !== null) {
+                        if (post.videos.length == 1 && post.body.trim() == post.videos[0]) {
+                            post.video_only = true;
+                        }
+    
+                        else {
+                            post.video_only = false;
+                        }
                     }
-
+    
                     else {
                         post.video_only = false;
                     }
+    
+                    post.total_payout_value.amount += post.pending_payout_value.amount;
+                    post.author_reputation = UTIL.reputation(post.author_reputation);
+    
+                    post.nsfw = post.json_metadata.tags.includes('nsfw');
+    
+                    let top_likers = HELPER.get_top_likers(post.active_votes);
+    
+                    post.body = HELPER.parse_body(post.body);
+    
+                    return _get_response(post, image, top_likers);
+                });
+    
+                // If pagination, remove the starting element
+                if (start_author !== undefined && start_permlink !== undefined) {
+                    result.shift();
                 }
-
-                else {
-                    post.video_only = false;
-                }
-
-                post.total_payout_value.amount += post.pending_payout_value.amount;
-                post.author_reputation = UTIL.reputation(post.author_reputation);
-
-                post.nsfw = post.json_metadata.tags.includes('nsfw');
-
-                let top_likers = HELPER.get_top_likers(post.active_votes);
-
-                post.body = HELPER.parse_body(post.body);
-
-                return _get_response(post, image, top_likers);
-            });
-
-            // If pagination, remove the starting element
-            if (start_author !== undefined && start_permlink !== undefined) {
-                result.shift();
+    
+                let offset = result[result.length - 1].url.split('/')[3];
+                let offset_author = result[result.length - 1].author;
+    
+                res.send({
+                    results: result,
+                    offset: offset,
+                    offset_author: offset_author
+                });
             }
-
-            let offset = result[result.length - 1].url.split('/')[3];
-            let offset_author = result[result.length - 1].author;
-
-            res.send({
-                results: result,
-                offset: offset,
-                offset_author: offset_author
-            });
+    
+            else {
+                res.send({
+                    results: [],
+                    offset: null,
+                    offset_author: null
+                });
+            }
         }
-
-        else {
+        catch(e) {
             res.send({
                 results: [],
                 offset: null,
                 offset_author: null
             });
         }
+
+        
     });
 }
 
