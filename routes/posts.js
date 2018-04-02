@@ -70,9 +70,15 @@ function _get_posts(req, res, next, type, tag) {
     
                     post.total_payout_value.amount += post.pending_payout_value.amount;
                     post.author_reputation = UTIL.reputation(post.author_reputation);
-    
-                    post.nsfw = post.json_metadata.tags.includes('nsfw');
-    
+                    
+                    try {
+                        post.nsfw = post.json_metadata.tags.includes('nsfw');
+                    }
+
+                    catch(e) {
+                        post.nsfw = false;
+                    }
+                    
                     let top_likers = HELPER.get_top_likers(post.active_votes);
 
                     if (post.reblogged_by.length > 0) {
@@ -248,7 +254,13 @@ router.get('/info', (req, res, next) => {
             post.reblogged_by = null;
         }
 
-        post.nsfw = post.json_metadata.tags.includes('nsfw');
+        try {
+            post.nsfw = post.json_metadata.tags.includes('nsfw');
+        }
+
+        catch(e) {
+            post.nsfw = false;
+        }
 
         post.body = HELPER.parse_body(post.body);
 
@@ -337,7 +349,13 @@ router.get('/feed', (req, res, next) => {
 
                 post.body = HELPER.parse_body(post.body);
 
-                post.nsfw = post.json_metadata.tags.includes('nsfw');
+                try {
+                    post.nsfw = post.json_metadata.tags.includes('nsfw');
+                }
+
+                catch(e) {
+                    post.nsfw = false;
+                }
 
                 return _get_response(post, image, top_likers);
             });
