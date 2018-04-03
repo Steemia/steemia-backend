@@ -63,6 +63,7 @@ async function _get_account(username) {
                         profile_image: `https://img.busy.org/@${result.name}`,
                         has_followed: 0,
                         voting_power: parseFloat(steemPower.toFixed(2)),
+                        json_metadata: result.json_metadata,
                         estimated_balance: data,
                         post_count: result.post_count,
                         sbd_balance: result.sbd_balance,
