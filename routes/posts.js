@@ -10,6 +10,7 @@ var md = new MARKDOWN('full', {
 });
 var express = require('express');
 var router = express.Router();
+var readingTime = require('reading-time');
 
 /**
  * Helper method to get the post
@@ -88,8 +89,10 @@ function _get_posts(req, res, next, type, tag) {
                     else {
                         post.reblogged_by = null;
                     }
-    
+
                     post.body = HELPER.parse_body(post.body);
+
+                    post.reading_text = readingTime(post.body);
     
                     return _get_response(post, image, top_likers);
                 });
@@ -153,6 +156,7 @@ function _get_response(post, image, top_likers) {
         net_likes: post.net_votes,
         max_accepted_payout: parseFloat(post.max_accepted_payout),
         total_payout_reward: parseFloat(post.total_payout_value) + parseFloat(post.pending_payout_value),
+        reading_time: post.reading_text.text,
         videos: post.videos || null,
         is_nsfw: post.nsfw,
         video_only: post.video_only,
@@ -264,6 +268,8 @@ router.get('/info', (req, res, next) => {
 
         post.body = HELPER.parse_body(post.body);
 
+        post.reading_text = readingTime(post.body);
+
         res.send(_get_response(post, image, top_likers));
 
     });
@@ -356,6 +362,8 @@ router.get('/feed', (req, res, next) => {
                 catch(e) {
                     post.nsfw = false;
                 }
+
+                post.reading_text = readingTime(post.body);
 
                 return _get_response(post, image, top_likers);
             });
