@@ -157,6 +157,8 @@ function _get_response(post, image, top_likers) {
         max_accepted_payout: parseFloat(post.max_accepted_payout),
         total_payout_reward: parseFloat(post.total_payout_value) + parseFloat(post.pending_payout_value),
         reading_time: post.reading_text.text,
+        root_author: post.root_author,
+        root_permlink: post.root_permlink,
         videos: post.videos || null,
         is_nsfw: post.nsfw,
         video_only: post.video_only,

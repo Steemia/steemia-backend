@@ -13,11 +13,18 @@
     "async": "^2.6.0",
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
+    "engine.io-client": "^3.2.1",
     "express": "^4.16.3",
+    "json-rpc-client": "^0.2.2",
+    "json-rpc-ws": "^5.0.0",
     "reading-time": "^1.1.0",
     "remarkable": "^1.7.1",
     "request": "^2.85.0",
+    "rpc-websockets": "^4.0.1",
+    "socket.io": "^2.1.0",
+    "socket.io-client": "^2.1.0",
     "steem": "^0.7.1",
+    "ws": "^5.1.1",
     "xmlhttprequest": "^1.8.0"
   },
   "devDependencies": {
