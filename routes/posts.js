@@ -424,6 +424,7 @@ router.get('/comments', (req, res, next) => {
                 avatar: `https://img.busy.org/@${comment.author}`,
                 created: comment.created,
                 url: comment.url,
+                permlink: comment.permlink,
                 author_reputation: UTIL.reputation(comment.author_reputation),
                 author: comment.author,
                 category: comment.category,
