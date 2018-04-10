@@ -148,7 +148,7 @@ function parse_body(body) {
     // Replace all images urls with image tag (Including IPFS images)
     body = body.replace(
         /https?:\/\/(?:[-a-zA-Z0-9._]*[-a-zA-Z0-9])(?::\d{2,5})?(?:[/?#](?:[^\s"'<>\][()]*[^\s"'<>\][().,])?(?:(?:\.(?:tiff?|jpe?g|gif|png|svg|ico)|ipfs\/[a-z\d]{40,})))/gi, 
-        '![SSR_IMAGE]($&)');
+        '![SSR_IMAGE](https://steemitimages.com/0x0/$&)');
 
     return body;
 }
