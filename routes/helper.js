@@ -130,7 +130,7 @@ function parse_body(body) {
 
         // Replace image markdown with only urls
         md_images.map(image => {
-            body = body.replace(image, image.match(/!\[.*?\]\((.*?)\)/)[1]);
+            body = body.replace(image, image.match(/!\[.*?\]\((.*?)\)/)[1].replace(/\(/g, '%28').replace(/\)/g, '%29'));
         });
     } catch(e) {}
 
@@ -141,7 +141,7 @@ function parse_body(body) {
 
         // Replace image tags with only urls
         images.map(image => {
-            body = body.replace(image, image.match(/<img.*?src=['"](.*?)['"]/)[1]);
+            body = body.replace(image, image.match(/<img.*?src=['"](.*?)['"]/)[1].replace(/\(/g, '%28').replace(/\)/g, '%29'));
         });
     } catch(e) {}
 

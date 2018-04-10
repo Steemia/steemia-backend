@@ -90,6 +90,7 @@ function _get_posts(req, res, next, type, tag) {
                         post.reblogged_by = null;
                     }
 
+                    post.raw_body = post.body;
                     post.body = HELPER.parse_body(post.body);
 
                     post.reading_text = readingTime(post.body);
@@ -145,7 +146,8 @@ function _get_response(post, image, top_likers) {
         reblogged_by: post.reblogged_by,
         author_reputation: post.author_reputation,
         title: post.title,
-        full_body: md.render(post.body),
+        full_body: post.body,
+        raw_body: post.raw_body,
         url: post.url,
         created: post.created,
         tags: post.json_metadata.tags,
@@ -268,6 +270,8 @@ router.get('/info', (req, res, next) => {
             post.nsfw = false;
         }
 
+        post.raw_body = post.body;
+
         post.body = HELPER.parse_body(post.body);
 
         post.reading_text = readingTime(post.body);
@@ -355,6 +359,8 @@ router.get('/feed', (req, res, next) => {
                     post.reblogged_by = null;
                 }
 
+                post.raw_body = post.body;
+                
                 post.body = HELPER.parse_body(post.body);
 
                 try {
