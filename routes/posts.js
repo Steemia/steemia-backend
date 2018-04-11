@@ -137,7 +137,7 @@ function _get_posts(req, res, next, type, tag) {
 function _get_response(post, image, top_likers) {
     return {
         author: post.author,
-        avatar: `https://img.busy.org/@${post.author}`,
+        avatar: 'https://steemitimages.com/u/' + post.author + '/avatar/small',
         reblogged_by: post.reblogged_by,
         author_reputation: post.author_reputation,
         title: post.title,
@@ -422,7 +422,7 @@ router.get('/comments', (req, res, next) => {
         let final = result.map(comment => {
             return {
                 body: comment.body,
-                avatar: `https://img.busy.org/@${comment.author}`,
+                avatar: 'https://steemitimages.com/u/' + comment.author + '/avatar/small',
                 created: comment.created,
                 url: comment.url,
                 permlink: comment.permlink,
@@ -468,7 +468,7 @@ router.get('/votes', (req, res, next) => {
             voter.reputation = UTIL.reputation(voter.reputation);
             voter.percent = voter.percent / 100;
             return {
-                profile_image: `https://img.busy.org/@${voter.voter}`,
+                profile_image: 'https://steemitimages.com/u/' + voter.voter + '/avatar/small',
                 username: voter.voter,
                 reputation: voter.reputation,
                 percent: voter.percent

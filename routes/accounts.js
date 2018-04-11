@@ -1,4 +1,5 @@
 const STEEM = require('steem');
+const HELPER = require('./helper');
 const UTIL = require('../utils/utils');
 var express = require('express');
 var router = express.Router();
@@ -125,6 +126,84 @@ router.get('/info', async (req, res, next) => {
     catch(e) {
         next(e)
     }
+});
+
+/**
+ * Generic method to get followers/following of an user
+ * @param {*} username 
+ * @param {*} limit 
+ * @param {*} start 
+ * @param {*} fn 
+ * @param {*} type 
+ */
+async function getFollows(username, limit, start, fn,type) {
+    return new Promise(resolve => {
+        STEEM.api[fn](username, start, 'blog', limit, (err, result) => {
+            let following = result.map(user => {
+    
+                return {
+                        account: user[type],
+                        avatar: 'https://steemitimages.com/u/' + user[type] + '/avatar/small'
+                }
+                
+            });
+    
+            if (following[0].account === "") {
+                following.shift();
+            }
+    
+            if (start !== '' || start !== undefined || start !== null) {
+                following.shift();
+            }
+    
+            resolve({
+                results: following,
+                offset: following[following.length - 1].account
+            });
+        });
+    });
+}
+
+/**
+ * Method to dispatch followers of an user
+ */
+router.get('/followers', async (req, res, next) => {
+    let username = req.query.username;
+    let limit = req.query.limit;
+    let start_follower = req.query.start;
+
+    if (start_follower === '' || start_follower === null || start_follower === undefined) {
+        start_follower = '';
+    }
+
+    if (username === '' || username === null || username === undefined) {
+        next(HELPER._prepare_error(500, 'Required parameter "username" is missing.', 'Internal'));
+    }
+
+    let followers = await getFollows(username, limit, start_follower, 'getFollowers', 'follower');
+
+    res.send(followers);
+});
+
+/**
+ * Method to dispatch following of an user
+ */
+router.get('/following', async (req, res, next) => {
+    let username = req.query.username;
+    let limit = req.query.limit;
+    let start_follower = req.query.start;
+
+    if (start_follower === '' || start_follower === null || start_follower === undefined) {
+        start_follower = '';
+    }
+
+    if (username === '' || username === null || username === undefined) {
+        next(HELPER._prepare_error(500, 'Required parameter "username" is missing.', 'Internal'));
+    }
+
+    let following = await getFollows(username, limit, start_follower, 'getFollowing', 'following');
+
+    res.send(following);
 });
 
 module.exports = router;

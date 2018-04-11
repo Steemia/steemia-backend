@@ -11,7 +11,7 @@ function get_top_likers(object) {
 
         for (let i = 0; i < 3; i++) {
             if (object[i] != null) {
-                top_likers.push(`https://img.busy.org/@${object[i].voter}`);
+                top_likers.push('https://steemitimages.com/u/' + object[i].voter + '/avatar/small');
             }
         }
     }

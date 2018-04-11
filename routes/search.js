@@ -68,7 +68,7 @@ router.get('/posts', async (req, res, next) => {
 
             return {
                 author: post.author,
-                avatar: `https://img.busy.org/@${post.author}`,
+                avatar: 'https://steemitimages.com/u/' + post.author + '/avatar/small',
                 author_reputation: UTIL.reputation(missing_data.author_reputation),
                 title: post.title,
                 full_body: md.render(post.body),
@@ -154,7 +154,7 @@ router.get('/tags', (req, res, next) => {
 
             return {
                 author: post.author,
-                avatar: `https://img.busy.org/@${post.author}`,
+                avatar: 'https://steemitimages.com/u/' + post.author + '/avatar/small',
                 author_reputation: UTIL.reputation(missing_data.author_reputation),
                 title: post.title,
                 full_body: md.render(post.body),
@@ -200,7 +200,7 @@ router.get('/users', async (req, res, next) => {
 
             return {
                 name: user,
-                avatar: `https://img.busy.org/@${user}`,
+                avatar: 'https://steemitimages.com/u/' + user + '/avatar/small',
                 reputation: null,
                 has_followed: has_followed
             }
