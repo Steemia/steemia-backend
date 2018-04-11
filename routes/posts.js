@@ -2,12 +2,7 @@ const UTIL = require('../utils/utils');
 const HELPER = require('./helper');
 const STEEM = require('steem');
 const MARKDOWN = require('remarkable');
-var md = new MARKDOWN('full', {
-    html: true,
-    linkify: true,
-    breaks: false,
-    typographer: true,
-});
+const marked = require('marked');
 var express = require('express');
 var router = express.Router();
 var readingTime = require('reading-time');
@@ -146,7 +141,7 @@ function _get_response(post, image, top_likers) {
         reblogged_by: post.reblogged_by,
         author_reputation: post.author_reputation,
         title: post.title,
-        full_body: post.body,
+        full_body: marked(post.body),
         raw_body: post.raw_body,
         url: post.url,
         created: post.created,
