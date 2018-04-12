@@ -139,6 +139,14 @@ router.get('/info', async (req, res, next) => {
 async function getFollows(username, limit, start, fn,type) {
     return new Promise(resolve => {
         STEEM.api[fn](username, start, 'blog', limit, (err, result) => {
+
+            if (result.length === 0) {
+                resolve({
+                    results: [],
+                    offset: null
+                });
+            }
+            
             let following = result.map(user => {
     
                 return {
