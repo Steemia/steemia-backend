@@ -1,4 +1,5 @@
 const STEEM = require('steem');
+var client = require('../utils/steemAPI');
 const HELPER = require('./helper');
 const UTIL = require('../utils/utils');
 var express = require('express');
@@ -11,13 +12,13 @@ var router = express.Router();
  */
 async function _is_following(username, target) {
     return new Promise(resolve => {
-        STEEM.api.getFollowers(username, target, 'blog', 1, (err, followers) => {
+        client.sendAsync('get_followers', [username, target, 'blog', 1]).then(followers => {
             try {
                 if (followers[0].follower == target) resolve(1);
                 else resolve(0);
             }
-            catch(e) { resolve(0) }
-        });
+            catch (e) { resolve(0) }
+        }).catch(err => resolve(0));
     });
 }
 
@@ -27,10 +28,9 @@ async function _is_following(username, target) {
  */
 async function _get_follow_count(username) {
     return new Promise(resolve => {
-        STEEM.api.getFollowCount(username, (err, follow) => {
-            if (follow) resolve(follow)
-            else resolve(err);
-        });
+        client.sendAsync('get_follow_count', [username]).then(follow => {
+            resolve(follow);
+        }).catch(err => resolve(err));
     });
 }
 
@@ -40,52 +40,48 @@ async function _get_follow_count(username) {
  */
 async function _get_account(username) {
     return new Promise(resolve => {
-        STEEM.api.getAccounts([username], (err, res) => {
-            if (res) {
-
-                let result = res[0];
-                try {
-                    result.json_metadata = JSON.parse(result.json_metadata);
-                }
-
-                catch (e) {
-                    resolve('wrong user')
-                }
-
-                result.reputation = UTIL.reputation(result.reputation);
-                let steemPower = parseFloat(result.reward_vesting_steem) * (parseFloat(result.vesting_shares) / parseFloat(result.reward_vesting_balance));
-
-                let balance = STEEM.formatter.estimateAccountValue(result);
-                balance.then(data => {
-                    let r = {
-                        created: result.created,
-                        reputation: result.reputation,
-                        username: result.name,
-                        profile_image: `https://img.busy.org/@${result.name}`,
-                        has_followed: 0,
-                        voting_power: parseFloat(steemPower.toFixed(2)),
-                        json_metadata: result.json_metadata,
-                        estimated_balance: data,
-                        post_count: result.post_count,
-                        sbd_balance: result.sbd_balance,
-                        balance: result.balance,
-
-                    }
-                    if (Object.keys(result.json_metadata).length === 0 && result.json_metadata.constructor === Object) {
-                        resolve(r);
-                    }
-                    else {
-                        r.name = result.json_metadata.profile.name;
-                        r.about = result.json_metadata.profile.about;
-                        r.location = result.json_metadata.profile.location;
-                        r.website = result.json_metadata.profile.website;
-                        resolve(r);
-                    }
-
-                });
+        client.sendAsync('get_accounts', [[username]]).then(res => {
+            let result = res[0];
+            try {
+                result.json_metadata = JSON.parse(result.json_metadata);
             }
-            else resolve(err);
-        });
+
+            catch (e) {
+                resolve('wrong user')
+            }
+
+            result.reputation = UTIL.reputation(result.reputation);
+            let steemPower = parseFloat(result.reward_vesting_steem) * (parseFloat(result.vesting_shares) / parseFloat(result.reward_vesting_balance));
+
+            let balance = STEEM.formatter.estimateAccountValue(result);
+            balance.then(data => {
+                let r = {
+                    created: result.created,
+                    reputation: result.reputation,
+                    username: result.name,
+                    profile_image: `https://img.busy.org/@${result.name}`,
+                    has_followed: 0,
+                    voting_power: parseFloat(steemPower.toFixed(2)),
+                    json_metadata: result.json_metadata,
+                    estimated_balance: data,
+                    post_count: result.post_count,
+                    sbd_balance: result.sbd_balance,
+                    balance: result.balance,
+
+                }
+                if (Object.keys(result.json_metadata).length === 0 && result.json_metadata.constructor === Object) {
+                    resolve(r);
+                }
+                else {
+                    r.name = result.json_metadata.profile.name;
+                    r.about = result.json_metadata.profile.about;
+                    r.location = result.json_metadata.profile.location;
+                    r.website = result.json_metadata.profile.website;
+                    resolve(r);
+                }
+
+            });
+        }).catch(err => resolve(err));
     });
 }
 
@@ -110,9 +106,14 @@ router.get('/info', async (req, res, next) => {
             account.following_count = follow.following_count;
 
             // Check if the current user has followed this user
-            let has_followed = await _is_following(user, username);
+            if (user !== username) {
+                let has_followed = await _is_following(user, username);
+                account.has_followed = has_followed;
+            }
 
-            account.has_followed = has_followed;
+            else {
+                account.has_followed = false;
+            }
 
             res.send(account);
         }
@@ -123,7 +124,7 @@ router.get('/info', async (req, res, next) => {
             });
         }
     }
-    catch(e) {
+    catch (e) {
         next(e)
     }
 });
@@ -136,9 +137,10 @@ router.get('/info', async (req, res, next) => {
  * @param {*} fn 
  * @param {*} type 
  */
-async function getFollows(username, limit, start, fn,type) {
+async function getFollows(username, limit, start, fn, type) {
     return new Promise(resolve => {
-        STEEM.api[fn](username, start, 'blog', limit, (err, result) => {
+
+        client.sendAsync(fn, [username, start, 'blog', limit]).then(result => {
             if (result.length === 1) {
                 if (result[0][type] === start) {
                     resolve({
@@ -147,35 +149,30 @@ async function getFollows(username, limit, start, fn,type) {
                     });
                 }
             }
-            else if (err) {
-                resolve({
-                    results: [],
-                    offset: null
-                });
-            }
 
             let following = result.map(user => {
-    
+
                 return {
                     account: user[type],
                     avatar: 'https://steemitimages.com/u/' + user[type] + '/avatar/small'
                 }
-                
+
             });
-    
+
             if (following[0].account === "") {
                 following.shift();
             }
-    
+
             if (start !== '' || start !== undefined || start !== null) {
                 following.shift();
             }
-    
+
             resolve({
                 results: following,
                 offset: following[following.length - 1].account
             });
-        });
+
+        }).catch(err => console.log(err));
     });
 }
 
@@ -195,7 +192,7 @@ router.get('/followers', async (req, res, next) => {
         next(HELPER._prepare_error(500, 'Required parameter "username" is missing.', 'Internal'));
     }
 
-    let followers = await getFollows(username, limit, start_follower, 'getFollowers', 'follower');
+    let followers = await getFollows(username, limit, start_follower, 'get_followers', 'follower');
 
     res.send(followers);
 });
@@ -216,7 +213,7 @@ router.get('/following', async (req, res, next) => {
         next(HELPER._prepare_error(500, 'Required parameter "username" is missing.', 'Internal'));
     }
 
-    let following = await getFollows(username, limit, start_follower, 'getFollowing', 'following');
+    let following = await getFollows(username, limit, start_follower, 'get_following', 'following');
 
     res.send(following);
 });

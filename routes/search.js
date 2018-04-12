@@ -1,16 +1,11 @@
 const UTIL = require('../utils/utils');
 const HELPER = require('./helper');
 const STEEM = require('steem');
+var client = require('../utils/steemAPI');
 var express = require('express');
 var router = express.Router();
 var request = require('request');
-const MARKDOWN = require('remarkable');
-var md = new MARKDOWN('full', {
-    html: true,
-    linkify: true,
-    breaks: false,
-    typographer: true,
-});
+const marked = require('marked');
 
 const ASK_STEEM = 'https://api.asksteem.com/';
 
@@ -71,7 +66,7 @@ router.get('/posts', async (req, res, next) => {
                 avatar: 'https://steemitimages.com/u/' + post.author + '/avatar/small',
                 author_reputation: UTIL.reputation(missing_data.author_reputation),
                 title: post.title,
-                full_body: md.render(post.body),
+                full_body: marked(post.body),
                 url: post.permlink,
                 created: post.created,
                 tags: post.tags,
@@ -157,7 +152,7 @@ router.get('/tags', (req, res, next) => {
                 avatar: 'https://steemitimages.com/u/' + post.author + '/avatar/small',
                 author_reputation: UTIL.reputation(missing_data.author_reputation),
                 title: post.title,
-                full_body: md.render(post.body),
+                full_body: marked(post.body),
                 url: post.permlink,
                 created: post.created,
                 tags: post.tags,
@@ -187,24 +182,31 @@ router.get('/tags', (req, res, next) => {
  * Method to search for users
  */
 router.get('/users', async (req, res, next) => {
-    let username = req.query.username;
+    let username = req.query.username.toLowerCase();
     let text = req.query.search;
 
     if (text === null || text === undefined || text === '') {
         return next(HELPER._prepare_error(500, 'Required parameter "search" is missing.', 'Internal'));
     }
 
-    STEEM.api.lookupAccounts(text, 100, async (err, result) => {
+    client.sendAsync('call', ["follow_api", "get_account_reputations", [text, 20]]).then(async result => {
+
         let results = result.map(async user => {
-            let has_followed = await _is_following(user.toString(), username);
+            let has_followed;
+            if (username !== null || username !== undefined || username !== '') {
+                has_followed = await _is_following(user.account.toString(), username);
+            }
+
+            else {
+                has_followed = false;
+            }
 
             return {
-                name: user,
-                avatar: 'https://steemitimages.com/u/' + user + '/avatar/small',
+                name: user.account,
+                avatar: 'https://steemitimages.com/u/' + user.account + '/avatar/small',
                 reputation: null,
                 has_followed: has_followed
             }
-
         });
 
         Promise.all(results).then(completed => {
@@ -213,7 +215,8 @@ router.get('/users', async (req, res, next) => {
                 type: 'user_search'
             });
         });
-    });
+        
+    }).catch(err => console.log(err));
 });
 
 /**
@@ -223,14 +226,13 @@ router.get('/users', async (req, res, next) => {
  */
 async function _is_following(username, target) {
     return new Promise(resolve => {
-        STEEM.api.getFollowers(username, target, 'blog', 1, (err, followers) => {
+        client.sendAsync('get_followers', [username, target, 'blog', 1]).then(followers => {
             try {
                 if (followers[0].follower == target) resolve(1);
                 else resolve(0);
             }
             catch(e) { resolve(0) }
-            
-        });
+        }).catch(err => resolve(0));
     });
 }
 
@@ -241,18 +243,17 @@ async function _is_following(username, target) {
  */
 async function _get_body(author, permlink) {
     return new Promise(resolve => {
-        STEEM.api.getContent(author, permlink, (err, result) => {
+        client.sendAsync('get_content', [author, permlink]).then(result => {
             if (result) resolve(result);
-            else resolve(err)
-        });
+        }).catch(err => resolve(err));
     });
 }
 
 async function get_followers(user) {
     return new Promise(resolve => {
-        STEEM.api.getFollowers(user.toString(), '', 'blog', 1000, (err, res) => {
-            resolve(res)
-        });
+        client.sendAsync('get_followers', [user.toString(), '', 'blog', 1000]).then(res => {
+            resolve(res);
+        }).catch(err => resolve(err));
     });
 }
 

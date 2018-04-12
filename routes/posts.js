@@ -1,6 +1,6 @@
 const UTIL = require('../utils/utils');
 const HELPER = require('./helper');
-const STEEM = require('steem');
+var client = require('../utils/steemAPI');
 const MARKDOWN = require('remarkable');
 const marked = require('marked');
 var express = require('express');
@@ -33,48 +33,48 @@ function _get_posts(req, res, next, type, tag) {
         object.start_permlink = start_permlink;
     }
 
-    STEEM.api[type](object, (err, posts) => {
+    client.sendAsync(type, [object]).then(posts => {
 
         try {
             if (posts.length != 1) {
                 let result = posts.map(post => {
-    
+
                     post.json_metadata = JSON.parse(post.json_metadata);
-    
+
                     // Check if user has voted this post.
                     post["vote"] = HELPER.is_post_voted(username, post);
-    
+
                     // Get body image of the post.
                     let image = HELPER.get_body_image(post);
-    
+
                     // Get videos of the post
                     post.videos = HELPER.get_body_video(post);
-    
+
                     if (post.videos !== null) {
                         if (post.videos.length == 1 && post.body.trim() == post.videos[0]) {
                             post.video_only = true;
                         }
-    
+
                         else {
                             post.video_only = false;
                         }
                     }
-    
+
                     else {
                         post.video_only = false;
                     }
-    
+
                     post.total_payout_value.amount += post.pending_payout_value.amount;
                     post.author_reputation = UTIL.reputation(post.author_reputation);
-                    
+
                     try {
                         post.nsfw = post.json_metadata.tags.includes('nsfw');
                     }
 
-                    catch(e) {
+                    catch (e) {
                         post.nsfw = false;
                     }
-                    
+
                     let top_likers = HELPER.get_top_likers(post.active_votes);
 
                     if (post.reblogged_by.length > 0) {
@@ -89,25 +89,25 @@ function _get_posts(req, res, next, type, tag) {
                     post.body = HELPER.parse_body(post.body);
 
                     post.reading_text = readingTime(post.body);
-    
+
                     return _get_response(post, image, top_likers);
                 });
-    
+
                 // If pagination, remove the starting element
                 if (start_author !== undefined && start_permlink !== undefined) {
                     result.shift();
                 }
-    
+
                 let offset = result[result.length - 1].url.split('/')[3];
                 let offset_author = result[result.length - 1].author;
-    
+
                 res.send({
                     results: result,
                     offset: offset,
                     offset_author: offset_author
                 });
             }
-    
+
             else {
                 res.send({
                     results: [],
@@ -116,7 +116,7 @@ function _get_posts(req, res, next, type, tag) {
                 });
             }
         }
-        catch(e) {
+        catch (e) {
             console.log(e)
             res.send({
                 results: [],
@@ -125,8 +125,13 @@ function _get_posts(req, res, next, type, tag) {
             });
         }
 
-        
-    });
+    }).catch(err => {
+        res.send({
+            results: [],
+            offset: null,
+            offset_author: null
+        });
+    })
 }
 
 /**
@@ -167,21 +172,21 @@ function _get_response(post, image, top_likers) {
  * Method to retrieve new posts
  */
 router.get('/new', (req, res, next) => {
-    _get_posts(req, res, next, 'getDiscussionsByCreated', '');
+    _get_posts(req, res, next, 'get_discussions_by_created', '');
 });
 
 /**
  * Method to retrieve trending posts
  */
 router.get('/trending', (req, res, next) => {
-    _get_posts(req, res, next, 'getDiscussionsByTrending', '');
+    _get_posts(req, res, next, 'get_discussions_by_trending', '');
 });
 
 /**
  * Method to retrieve hot posts
  */
 router.get('/hot', (req, res, next) => {
-    _get_posts(req, res, next, 'getDiscussionsByHot', '');
+    _get_posts(req, res, next, 'get_discussions_by_hot', '');
 });
 
 /**
@@ -189,7 +194,7 @@ router.get('/hot', (req, res, next) => {
  */
 router.get('/blog', (req, res, next) => {
     let user = req.query.user;
-    _get_posts(req, res, next, 'getDiscussionsByBlog', user);
+    _get_posts(req, res, next, 'get_discussions_by_blog', user);
 });
 
 /**
@@ -217,8 +222,7 @@ router.get('/info', (req, res, next) => {
         }
     }
 
-    STEEM.api.getContent(author, permlink, (err, post) => {
-
+    client.sendAsync('get_content', [author, permlink]).then(post => {
         post.json_metadata = JSON.parse(post.json_metadata);
 
         // Check if user has voted this post.
@@ -261,7 +265,7 @@ router.get('/info', (req, res, next) => {
             post.nsfw = post.json_metadata.tags.includes('nsfw');
         }
 
-        catch(e) {
+        catch (e) {
             post.nsfw = false;
         }
 
@@ -273,7 +277,7 @@ router.get('/info', (req, res, next) => {
 
         res.send(_get_response(post, image, top_likers));
 
-    });
+    }).catch(err => console.log(err));
 });
 
 /**
@@ -312,7 +316,7 @@ router.get('/feed', (req, res, next) => {
         object.start_permlink = start_permlink
     }
 
-    STEEM.api.getDiscussionsByFeed(object, (err, posts) => {
+    client.sendAsync('get_discussions_by_feed', [object]).then(posts => {
         if (posts.length != 1) {
             let result = posts.map(post => {
 
@@ -355,14 +359,14 @@ router.get('/feed', (req, res, next) => {
                 }
 
                 post.raw_body = post.body;
-                
+
                 post.body = HELPER.parse_body(post.body);
 
                 try {
                     post.nsfw = post.json_metadata.tags.includes('nsfw');
                 }
 
-                catch(e) {
+                catch (e) {
                     post.nsfw = false;
                 }
 
@@ -393,6 +397,12 @@ router.get('/feed', (req, res, next) => {
                 offset_author: null
             });
         }
+    }).catch(err => {
+        res.send({
+            results: [],
+            offset: null,
+            offset_author: null
+        });
     });
 });
 
@@ -408,14 +418,15 @@ router.get('/comments', (req, res, next) => {
     if (permlink === undefined || permlink === null || permlink === '') {
         return next(HELPER._prepare_error(500, 'Required parameter "permlink" is missing.', 'Internal'));
     }
-    
+
     let comments = [];
-    STEEM.api.getState(permlink, (err, results) => {
+
+    client.sendAsync('get_state', [permlink]).then(results => {
         results = JSON.parse(JSON.stringify(results));
         delete results.content[to_delete];
 
         let result = Object.values(results.content)
-        result.sort((a, b) => { 
+        result.sort((a, b) => {
             return b.id > a.id;   // <== to compare string values
         });
 
@@ -440,6 +451,10 @@ router.get('/comments', (req, res, next) => {
         res.send({
             results: final
         });
+    }).catch(err => {
+        res.send({
+            results: []
+        });
     });
 });
 
@@ -463,7 +478,7 @@ router.get('/votes', (req, res, next) => {
         }
     }
 
-    STEEM.api.getActiveVotes(author, url, (err, votes) => {
+    client.sendAsync('get_active_votes', [author, url]).then(votes => {
         let results = votes.map(voter => {
             voter.reputation = UTIL.reputation(voter.reputation);
             voter.percent = voter.percent / 100;
@@ -476,6 +491,10 @@ router.get('/votes', (req, res, next) => {
         });
         res.send({
             results: results
+        });
+    }).catch(err => {
+        res.send({
+            results: []
         });
     });
 });
