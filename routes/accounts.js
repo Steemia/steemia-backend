@@ -6,23 +6,6 @@ var express = require('express');
 var router = express.Router();
 
 /**
- * Method to check if the logged in user is following the queried user
- * @param {String} username 
- * @param {String} target 
- */
-async function _is_following(username, target) {
-    return new Promise(resolve => {
-        client.sendAsync('get_followers', [username, target, 'blog', 1]).then(followers => {
-            try {
-                if (followers[0].follower == target) resolve(1);
-                else resolve(0);
-            }
-            catch (e) { resolve(0) }
-        }).catch(err => resolve(0));
-    });
-}
-
-/**
  * Method to get follow stats of an user
  * @param {String} username 
  */
@@ -35,85 +18,66 @@ async function _get_follow_count(username) {
 }
 
 /**
- * Method to retrieve user data
- * @param {String} username 
- */
-async function _get_account(username) {
-    return new Promise(resolve => {
-        client.sendAsync('get_accounts', [[username]]).then(res => {
-            let result = res[0];
-            try {
-                result.json_metadata = JSON.parse(result.json_metadata);
-            }
-
-            catch (e) {
-                resolve('wrong user')
-            }
-
-            result.reputation = UTIL.reputation(result.reputation);
-            let steemPower = parseFloat(result.reward_vesting_steem) * (parseFloat(result.vesting_shares) / parseFloat(result.reward_vesting_balance));
-
-            let balance = STEEM.formatter.estimateAccountValue(result);
-            balance.then(data => {
-                let r = {
-                    created: result.created,
-                    reputation: result.reputation,
-                    username: result.name,
-                    profile_image: `https://img.busy.org/@${result.name}`,
-                    has_followed: 0,
-                    voting_power: parseFloat(steemPower.toFixed(2)),
-                    json_metadata: result.json_metadata,
-                    estimated_balance: data,
-                    post_count: result.post_count,
-                    sbd_balance: result.sbd_balance,
-                    balance: result.balance,
-
-                }
-                if (Object.keys(result.json_metadata).length === 0 && result.json_metadata.constructor === Object) {
-                    resolve(r);
-                }
-                else {
-                    r.name = result.json_metadata.profile.name;
-                    r.about = result.json_metadata.profile.about;
-                    r.location = result.json_metadata.profile.location;
-                    r.website = result.json_metadata.profile.website;
-                    resolve(r);
-                }
-
-            });
-        }).catch(err => resolve(err));
-    });
-}
-
-/**
  * Method to dispatch user data
  * @param {*} req 
  * @param {*} res 
  */
-router.get('/info', async (req, res, next) => {
-    try {
-        let user = req.query.user;
-        let username = req.query.username;
+router.get('/info', (req, res, next) => {
+    let username = req.query.user;
 
-        // Get account data
-        let account = await _get_account(user);
+    client.sendAsync('get_accounts', [[username]]).then(rest => {
+        let result = rest[0];
+        try {
+            result.json_metadata = JSON.parse(result.json_metadata);
+        }
 
-        if (account !== "wrong user") {
-            account.has_followed = false;
-            res.send(account);
+        catch (e) {
+            resolve('wrong user')
+        }
+
+        result.reputation = UTIL.reputation(result.reputation);
+        let vesting_steem;
+
+        if (parseFloat(result.reward_vesting_steem) == 0) {
+            vesting_steem = parseFloat(result.delegated_vesting_shares);
         }
 
         else {
-            res.send({
-                error: 'invalid user'
-            });
+            vesting_steem = parseFloat(result.reward_vesting_steem)
         }
-    }
-    catch (e) {
-        next(e)
-    }
+
+        let balance = STEEM.formatter.estimateAccountValue(result);
+        balance.then(bal => {
+            let r = {
+                created: result.created,
+                reputation: result.reputation,
+                username: result.name,
+                profile_image: `https://img.busy.org/@${result.name}`,
+                json_metadata: result.json_metadata,
+                estimated_balance: bal,
+                post_count: result.post_count,
+                sbd_balance: result.sbd_balance,
+                balance: result.balance,
+
+            }
+            if (Object.keys(result.json_metadata).length === 0 && result.json_metadata.constructor === Object) {
+                res.send(r);
+            }
+            else {
+                r.name = result.json_metadata.profile.name;
+                r.about = result.json_metadata.profile.about;
+                r.location = result.json_metadata.profile.location;
+                r.website = result.json_metadata.profile.website;
+                res.send(r);
+            }
+        });
+
+    }).catch(err => console.log(err));
 });
 
+/**
+ * Method to get stats from an user
+ */
 router.get('/stats', async (req, res, next) => {
     let user = req.query.user;
 
@@ -125,6 +89,9 @@ router.get('/stats', async (req, res, next) => {
     });
 });
 
+/**
+ * Method to determine if an user is following each other
+ */
 router.get('/is_following', (req, res, next) => {
     let username = req.query.username;
     let user = req.query.user;
@@ -144,12 +111,46 @@ router.get('/is_following', (req, res, next) => {
 
     client.sendAsync('get_followers', [username, user, 'blog', 1]).then(followers => {
         try {
-            if (followers[0].follower == user) res.send({following: true});
-            else res.send({following: false});
+            if (followers[0].follower == user) res.send({ following: true });
+            else res.send({ following: false });
         }
-        catch (e) { res.send({following: false}) }
-    }).catch(err => res.send({following: false}));
-})
+        catch (e) { res.send({ following: false }) }
+    }).catch(err => res.send({ following: false }));
+});
+
+/**
+ * Method to get steem power of an user
+ */
+router.get('/voting_power', async (req, res, next) => {
+    let user = req.query.username;
+
+    let account = await get_account(user);
+    let globals = await get_properties();
+
+    const totalSteem = Number(globals.total_vesting_fund_steem.split(' ')[0]);
+    const totalVests = Number(globals.total_vesting_shares.split(' ')[0]);
+    const userVests = Number(account[0].vesting_shares.split(' ')[0]);
+
+    res.send({
+        voting_power: totalSteem * (userVests / totalVests)
+    });
+});
+
+async function get_account(user) {
+    return new Promise(resolve => {
+        client.sendAsync('get_accounts', [[user]]).then(data => {
+            resolve(data);
+        }).catch(err => resolve(err));
+    });
+}
+
+async function get_properties() {
+    return new Promise(resolve => {
+        client.sendAsync('get_dynamic_global_properties', []).then(data => {
+            resolve(data);
+        }).catch(err => resolve(err));
+    })
+}
 
 /**
  * Generic method to get followers/following of an user
