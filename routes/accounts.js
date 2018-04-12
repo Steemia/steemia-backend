@@ -99,22 +99,7 @@ router.get('/info', async (req, res, next) => {
         let account = await _get_account(user);
 
         if (account !== "wrong user") {
-            // Get follow stats
-            let follow = await _get_follow_count(user);
-
-            account.followers_count = follow.follower_count;
-            account.following_count = follow.following_count;
-
-            // Check if the current user has followed this user
-            if (user !== username) {
-                let has_followed = await _is_following(user, username);
-                account.has_followed = has_followed;
-            }
-
-            else {
-                account.has_followed = false;
-            }
-
+            account.has_followed = false;
             res.send(account);
         }
 
@@ -128,6 +113,43 @@ router.get('/info', async (req, res, next) => {
         next(e)
     }
 });
+
+router.get('/stats', async (req, res, next) => {
+    let user = req.query.user;
+
+    let follow = await _get_follow_count(user);
+
+    res.send({
+        followers_count: follow.follower_count,
+        following_count: follow.following_count
+    });
+});
+
+router.get('/is_following', (req, res, next) => {
+    let username = req.query.username;
+    let user = req.query.user;
+
+    if (username === '' || username === undefined || user === null) {
+        if (user === '' || user === undefined || user === null) {
+            return next(HELPER._prepare_error(500, 'Required parameters "username" and "user" are missing.', 'Internal'));
+        }
+        return next(HELPER._prepare_error(500, 'Required parameter "username" is missing.', 'Internal'));
+    }
+
+    else {
+        if (user === '' || user === undefined || user === null) {
+            return next(HELPER._prepare_error(500, 'Required parameter "user" is missing.', 'Internal'));
+        }
+    }
+
+    client.sendAsync('get_followers', [username, user, 'blog', 1]).then(followers => {
+        try {
+            if (followers[0].follower == user) res.send({following: true});
+            else res.send({following: false});
+        }
+        catch (e) { res.send({following: false}) }
+    }).catch(err => res.send({following: false}));
+})
 
 /**
  * Generic method to get followers/following of an user
