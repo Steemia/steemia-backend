@@ -139,19 +139,26 @@ router.get('/info', async (req, res, next) => {
 async function getFollows(username, limit, start, fn,type) {
     return new Promise(resolve => {
         STEEM.api[fn](username, start, 'blog', limit, (err, result) => {
-
-            if (result.length === 0) {
+            if (result.length === 1) {
+                if (result[0][type] === start) {
+                    resolve({
+                        results: [],
+                        offset: null
+                    });
+                }
+            }
+            else if (err) {
                 resolve({
                     results: [],
                     offset: null
                 });
             }
-            
+
             let following = result.map(user => {
     
                 return {
-                        account: user[type],
-                        avatar: 'https://steemitimages.com/u/' + user[type] + '/avatar/small'
+                    account: user[type],
+                    avatar: 'https://steemitimages.com/u/' + user[type] + '/avatar/small'
                 }
                 
             });
