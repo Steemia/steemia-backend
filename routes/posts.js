@@ -432,7 +432,7 @@ router.get('/comments', (req, res, next) => {
 
         let final = result.map(comment => {
             return {
-                body: comment.body,
+                body: marked(comment.body),
                 avatar: 'https://steemitimages.com/u/' + comment.author + '/avatar/small',
                 created: comment.created,
                 url: comment.url,
