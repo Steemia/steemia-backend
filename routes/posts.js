@@ -78,19 +78,14 @@ function _get_posts(req, res, next, type, tag) {
                     let top_likers = HELPER.get_top_likers(post.active_votes);
 
                     if (post.reblogged_by.length > 0) {
+                        console.log(post.reblogged_by)
                         post.reblogged_by = post.reblogged_by[0];
                     }
 
                     else {
                         post.reblogged_by = null;
                     }
-
-                    if (type === 'get_discussions_by_blog') {
-                        if (post.author !== username) {
-                            post.reblogged_by = username;
-                        }
-                    }
-
+                    
                     post.raw_body = post.body;
                     post.body = HELPER.parse_body(post.body);
 
