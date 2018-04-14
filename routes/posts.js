@@ -85,6 +85,12 @@ function _get_posts(req, res, next, type, tag) {
                         post.reblogged_by = null;
                     }
 
+                    if (type === 'get_discussions_by_blog') {
+                        if (post.author !== username) {
+                            post.reblogged_by = username;
+                        }
+                    }
+
                     post.raw_body = post.body;
                     post.body = HELPER.parse_body(post.body);
 
