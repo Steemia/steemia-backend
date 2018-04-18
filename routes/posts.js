@@ -1,7 +1,11 @@
 const UTIL = require('../utils/utils');
 const HELPER = require('./helper');
 var client = require('../utils/steemAPI');
-const MARKDOWN = require('remarkable');
+const Remarkable = require('remarkable');
+var md = new Remarkable({
+    html: true,
+    breaks: false,
+});
 const marked = require('marked');
 var express = require('express');
 var router = express.Router();
@@ -147,7 +151,7 @@ function _get_response(post, image, top_likers) {
         reblogged_by: post.reblogged_by,
         author_reputation: post.author_reputation,
         title: post.title,
-        full_body: marked(post.body),
+        full_body: md.render(post.body),
         raw_body: post.raw_body,
         url: post.url,
         created: post.created,
@@ -321,7 +325,13 @@ router.get('/feed', (req, res, next) => {
         if (posts.length != 1) {
             let result = posts.map(post => {
 
-                post.json_metadata = JSON.parse(post.json_metadata);
+                try {
+                    post.json_metadata = JSON.parse(post.json_metadata);
+                }
+                
+                catch (e) {
+                    
+                }
 
                 // Check if user has voted this post.
                 post.vote = HELPER.is_post_voted(username, post);
@@ -433,7 +443,7 @@ router.get('/comments', (req, res, next) => {
 
         let final = result.map(comment => {
             return {
-                body: marked(comment.body),
+                body: md.render(comment.body),
                 raw_body: comment.body,
                 parent_author: comment.parent_author,
                 avatar: 'https://steemitimages.com/u/' + comment.author + '/avatar/small',
