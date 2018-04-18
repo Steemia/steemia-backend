@@ -426,7 +426,8 @@ router.get('/comments', (req, res, next) => {
         results = JSON.parse(JSON.stringify(results));
         delete results.content[to_delete];
 
-        let result = Object.values(results.content)
+        let result = Object.values(results.content);
+        console.log(result);
         result.sort((a, b) => {
             return b.id > a.id;   // <== to compare string values
         });
@@ -435,6 +436,7 @@ router.get('/comments', (req, res, next) => {
             return {
                 body: marked(comment.body),
                 raw_body: comment.body,
+                parent_author: comment.parent_author,
                 avatar: 'https://steemitimages.com/u/' + comment.author + '/avatar/small',
                 created: comment.created,
                 url: comment.url,
