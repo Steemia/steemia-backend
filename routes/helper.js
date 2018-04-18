@@ -130,7 +130,7 @@ function parse_body(body) {
 
         // Replace image markdown with only urls
         md_images.map(image => {
-            body = body.replace(image, image.match(/!\[.*?\]\((.*?)\)/)[1].replace(/\(/g, '%28').replace(/\)/g, '%29'));
+            body = body.replace(image, image.match(/!\[.*?\]\((.*?)\)/)[1].replace(/\(/g, encodeURI('%28')).replace(/\)/g, encodeURI('%29')));
         });
     } catch(e) {}
 
@@ -141,14 +141,14 @@ function parse_body(body) {
 
         // Replace image tags with only urls
         images.map(image => {
-            body = body.replace(image, image.match(/<img.*?src=['"](.*?)['"]/)[1].replace(/\(/g, '%28').replace(/\)/g, '%29'));
+            body = body.replace(image, image.match(/<img.*?src=['"](.*?)['"]/)[1].replace(/\(/g, encodeURI('%28')).replace(/\)/g, encodeURI('%29')));
         });
     } catch(e) {}
 
     // Replace all images urls with image tag (Including IPFS images)
     body = body.replace(
         /https?:\/\/(?:[-a-zA-Z0-9._]*[-a-zA-Z0-9])(?::\d{2,5})?(?:[/?#](?:[^\s"'<>\][()]*[^\s"'<>\][().,])?(?:(?:\.(?:tiff?|jpe?g|gif|png|svg|ico)|ipfs\/[a-z\d]{40,})))/gi, 
-        '<img src="https://steemitimages.com/0x0/$&" />');
+        '<img src="https://steemitimages.com/0x0/' + encodeURI('$&') + '" />');
     
 
     body = body.replace(/<[^\/>][^>]*><\/[^>]+>/gim, '');
