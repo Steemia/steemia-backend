@@ -427,7 +427,6 @@ router.get('/comments', (req, res, next) => {
         delete results.content[to_delete];
 
         let result = Object.values(results.content);
-        console.log(result);
         result.sort((a, b) => {
             return b.id > a.id;   // <== to compare string values
         });
