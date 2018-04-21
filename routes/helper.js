@@ -7,11 +7,16 @@ var exports = module.exports = {};
  */
 function get_top_likers(object) {
     let top_likers = [];
+    let limit = 3;
     if (object.length !== 0) {
 
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < limit; i++) {
             if (object[i] != null) {
-                top_likers.push('https://steemitimages.com/u/' + object[i].voter + '/avatar/small');
+                if (object[i].percent <= 0) { limit = 4; }
+                else {
+                    top_likers.push('https://steemitimages.com/u/' + object[i].voter + '/avatar/small');
+                }
+                
             }
         }
     }
@@ -38,9 +43,17 @@ function is_post_voted(username, object) {
                              .replace(/(?:[ ]{4}((?:[ ]{4})*))/g, '\\n$1');
             let match = string.match(username);
             
+            let obj = object.active_votes.find(o => o.voter === username);
+            
             try {
                 if (match.index !== null || match !== undefined) {
-                    is_voted = true;
+                    if (obj.percent === 0) {
+                        is_voted = false;
+                    }
+                    else {
+                        is_voted = true;
+                    }
+                    
                 } 
     
                 else {
