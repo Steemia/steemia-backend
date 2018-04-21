@@ -497,6 +497,10 @@ router.get('/votes', (req, res, next) => {
         let results = votes.map(voter => {
             voter.reputation = UTIL.reputation(voter.reputation);
             voter.percent = voter.percent / 100;
+
+            if (voter.percent === 0) {
+                return;
+            }
             return {
                 profile_image: 'https://steemitimages.com/u/' + voter.voter + '/avatar/small',
                 username: voter.voter,
@@ -504,6 +508,8 @@ router.get('/votes', (req, res, next) => {
                 percent: voter.percent
             }
         });
+
+        results.clean(null);
         res.send({
             results: results
         });
@@ -513,5 +519,15 @@ router.get('/votes', (req, res, next) => {
         });
     });
 });
+
+Array.prototype.clean = function(deleteValue) {
+    for (var i = 0; i < this.length; i++) {
+      if (this[i] == deleteValue) {         
+        this.splice(i, 1);
+        i--;
+      }
+    }
+    return this;
+};
 
 module.exports = router;
