@@ -32,7 +32,7 @@ router.get('/info', (req, res, next) => {
         }
 
         catch (e) {
-            resolve('wrong user')
+            return next(HELPER._prepare_error(500, 'Wrong user passed', 'Internal'));
         }
 
         result.reputation = UTIL.reputation(result.reputation);
