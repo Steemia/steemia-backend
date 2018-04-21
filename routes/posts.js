@@ -2,10 +2,12 @@ const UTIL = require('../utils/utils');
 const HELPER = require('./helper');
 var client = require('../utils/steemAPI');
 const Remarkable = require('remarkable');
-var md = new Remarkable({
-    html: true,
-    breaks: false,
-});
+var md = new Remarkable({ 
+    html: true, // remarkable renders first then sanitize runs...
+    breaks: true,
+    linkify: false, // linkify is done locally
+    typographer: false, // https://github.com/jonschlinkert/remarkable/issues/142#issuecomment-221546793
+    quotes: '“”‘’', });
 const marked = require('marked');
 var express = require('express');
 var router = express.Router();
@@ -91,7 +93,7 @@ function _get_posts(req, res, next, type, tag) {
                     }
                     
                     post.raw_body = post.body;
-                    post.body = HELPER.parse_body(post.body);
+                    //post.body = HELPER.parse_body(post.body);
 
                     post.reading_text = readingTime(post.body);
 
