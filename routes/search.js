@@ -182,7 +182,11 @@ router.get('/tags', (req, res, next) => {
  * Method to search for users
  */
 router.get('/users', async (req, res, next) => {
-    let username = req.query.username.toLowerCase();
+    let username = null;
+    try {
+        username = req.query.username.toLowerCase();
+    } catch (e) {}
+    
     let text = req.query.search;
 
     if (text === null || text === undefined || text === '') {
@@ -194,7 +198,12 @@ router.get('/users', async (req, res, next) => {
         let results = result.map(async user => {
             let has_followed;
             if (username !== null || username !== undefined || username !== '') {
-                has_followed = await _is_following(user.account.toString(), username);
+                if (username === null) {
+                    has_followed = false;
+                } else {
+                    has_followed = await _is_following(user.account.toString(), username);
+                }
+                
             }
 
             else {
