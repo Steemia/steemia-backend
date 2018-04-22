@@ -16,7 +16,7 @@ function get_top_likers(object) {
                 else {
                     top_likers.push('https://steemitimages.com/u/' + object[i].voter + '/avatar/small');
                 }
-                
+
             }
         }
     }
@@ -38,13 +38,13 @@ function is_post_voted(username, object) {
 
         else {
             let string = JSON.stringify(object.active_votes, null, '\n')
-                             .replace(/"/g, '\\"')
-                             .replace(/\n/g, '    ')
-                             .replace(/(?:[ ]{4}((?:[ ]{4})*))/g, '\\n$1');
+                .replace(/"/g, '\\"')
+                .replace(/\n/g, '    ')
+                .replace(/(?:[ ]{4}((?:[ ]{4})*))/g, '\\n$1');
             let match = string.match(username);
-            
+
             let obj = object.active_votes.find(o => o.voter === username);
-            
+
             try {
                 if (match.index !== null || match !== undefined) {
                     if (obj.percent === 0) {
@@ -53,9 +53,9 @@ function is_post_voted(username, object) {
                     else {
                         is_voted = true;
                     }
-                    
-                } 
-    
+
+                }
+
                 else {
                     is_voted = false;
                 }
@@ -64,7 +64,7 @@ function is_post_voted(username, object) {
             catch (e) {
                 is_voted = false;
             }
-            
+
         }
     }
 
@@ -103,12 +103,23 @@ function get_body_image(post) {
     let image;
 
     try {
-        image = post.json_metadata.image[0]
+        image = post.json_metadata.image[0];
     }
 
     catch (e) {
         let n = post.body.match(/https?:\/\/(?:[-a-zA-Z0-9._]*[-a-zA-Z0-9])(?::\d{2,5})?(?:[/?#](?:[^\s"'<>\][()]*[^\s"'<>\][().,])?(?:(?:\.(?:tiff?|jpe?g|gif|png|svg|ico)|ipfs\/[a-z\d]{40,})))/gi)
-        if (n === null) image = null;
+        if (n === null) {
+            let images = post.body.match(
+                /^(https?\:\/\/)?(www\.)?(steemit-production-imageproxy-thumbnail.s3.amazonaws\.com)\/[a-zA-Z0-9_.-]*/gmi
+            );
+            if (images !== null) {
+                image = images[0];
+            }
+
+            else {
+                image = null;
+            }
+        }
         else {
             image = n[0];
         };
@@ -131,6 +142,35 @@ function get_body_videos(post) {
     return videos
 }
 
+function parse_videos(body) {
+    try {
+        let v = body.trim().match(/^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/igm);
+        if (v !== null) {
+            v.map(video => {
+                let url = 'https://youtube.com/embed/';
+                let id = YouTubeGetID(video);
+                url += id;
+                body = body.replace(video, '<iframe width="100%" height="320px" src="' + url + '" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>');
+            });
+        }
+    } catch (e) { console.log(e) }
+
+    return body;
+}
+
+function YouTubeGetID(url) {
+    var ID = '';
+    url = url.replace(/(>|<)/gi, '').split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/);
+    if (url[2] !== undefined) {
+        ID = url[2].split(/[^0-9a-z_\-]/i);
+        ID = ID[0];
+    }
+    else {
+        ID = url;
+    }
+    return ID;
+}
+
 /**
  * Method to replace images with markdown
  * @param {String} body 
@@ -145,7 +185,7 @@ function parse_body(body) {
         md_images.map(image => {
             body = body.replace(image, image.match(/!\[.*?\]\((.*?)\)/)[1].replace(/\(/g, '%28').replace(/\)/g, '%29'));
         });
-    } catch(e) {}
+    } catch (e) { }
 
     // Try to replace all image tags with plain url image
     try {
@@ -156,13 +196,26 @@ function parse_body(body) {
         images.map(image => {
             body = body.replace(image, image.match(/<img.*?src=['"](.*?)['"]/)[1].replace(/\(/g, '%28').replace(/\)/g, '%29'));
         });
-    } catch(e) {}
+    } catch (e) { }
 
 
     // Replace all images urls with image tag (Including IPFS images)
     body = body.replace(
-        /https?:\/\/(?:[-a-zA-Z0-9._]*[-a-zA-Z0-9])(?::\d{2,5})?(?:[/?#](?:[^\s"'<>\][()]*[^\s"'<>\][().,])?(?:(?:\.(?:tiff?|jpe?g|gif|png|svg|ico)|ipfs\/[a-z\d]{40,})))/gi, 
+        /https?:\/\/(?:[-a-zA-Z0-9._]*[-a-zA-Z0-9])(?::\d{2,5})?(?:[/?#](?:[^\s"'<>\][()]*[^\s"'<>\][().,])?(?:(?:\.(?:tiff?|jpe?g|gif|png|svg|ico)|ipfs\/[a-z\d]{40,})))/gi,
         '<img src="https://steemitimages.com/0x0/' + encodeURI('$&') + '" />');
+
+    // Parse Steemit production links
+
+    try {
+        let images = body.match(
+            /^(https?\:\/\/)?(www\.)?(steemit-production-imageproxy-thumbnail.s3.amazonaws\.com)\/[a-zA-Z0-9_.-]*/gmi
+        );
+        if (images !== null) {
+            images.map(image => {
+                body = body.replace(image, '<img src="https://steemitimages.com/0x0/' + encodeURI('$&') + '" />')
+            });
+        }
+    } catch(e) { console.log(e)}
 
     return body;
 }
@@ -188,3 +241,4 @@ exports.get_body_video = get_body_videos;
 exports.is_following = is_following;
 exports.parse_body = parse_body;
 exports._prepare_error = _prepare_error;
+exports.parse_videos = parse_videos;

@@ -2,16 +2,19 @@ const UTIL = require('../utils/utils');
 const HELPER = require('./helper');
 var client = require('../utils/steemAPI');
 const Remarkable = require('remarkable');
-var md = new Remarkable({ 
+var md = new Remarkable({
     html: true, // remarkable renders first then sanitize runs...
     breaks: true,
     linkify: false, // linkify is done locally
     typographer: false, // https://github.com/jonschlinkert/remarkable/issues/142#issuecomment-221546793
-    quotes: '“”‘’', });
+    quotes: '“”‘’',
+});
 const marked = require('marked');
 var express = require('express');
 var router = express.Router();
 var readingTime = require('reading-time');
+
+const NSFW = ['nsfw', 'NSFW', 'porn', 'dporn', 'Dporn', 'Dporncovideos', 'dporncovideos'];
 
 /**
  * Helper method to get the post
@@ -74,7 +77,25 @@ function _get_posts(req, res, next, type, tag) {
                     post.author_reputation = UTIL.reputation(post.author_reputation);
 
                     try {
-                        post.nsfw = post.json_metadata.tags.includes('nsfw');
+                        let cond = [];
+
+                        post.json_metadata.tags.forEach(tag => {
+                            if (contains(tag, NSFW)) {
+                                cond.push(true);
+                            }
+
+                            else {
+                                cond.push(false);
+                            }
+                        });
+
+                        if (cond.includes(true)) {
+                            post.nsfw = true;
+                        }
+
+                        else {
+                            post.nsfw = false;
+                        }
                     }
 
                     catch (e) {
@@ -91,9 +112,11 @@ function _get_posts(req, res, next, type, tag) {
                     else {
                         post.reblogged_by = null;
                     }
-                    
+
                     post.raw_body = post.body;
-                    //post.body = HELPER.parse_body(post.body);
+                    post.body = HELPER.parse_body(post.body);
+
+                    post.body = HELPER.parse_videos(post.body);
 
                     post.reading_text = readingTime(post.body);
 
@@ -269,7 +292,25 @@ router.get('/info', (req, res, next) => {
         }
 
         try {
-            post.nsfw = post.json_metadata.tags.includes('nsfw');
+            let cond = [];
+
+            post.json_metadata.tags.forEach(tag => {
+                if (contains(tag, NSFW)) {
+                    cond.push(true);
+                }
+
+                else {
+                    cond.push(false);
+                }
+            });
+
+            if (cond.includes(true)) {
+                post.nsfw = true;
+            }
+
+            else {
+                post.nsfw = false;
+            }
         }
 
         catch (e) {
@@ -330,9 +371,9 @@ router.get('/feed', (req, res, next) => {
                 try {
                     post.json_metadata = JSON.parse(post.json_metadata);
                 }
-                
+
                 catch (e) {
-                    
+
                 }
 
                 // Check if user has voted this post.
@@ -376,7 +417,25 @@ router.get('/feed', (req, res, next) => {
                 post.body = HELPER.parse_body(post.body);
 
                 try {
-                    post.nsfw = post.json_metadata.tags.includes('nsfw');
+                    let cond = [];
+
+                    post.json_metadata.tags.forEach(tag => {
+                        if (contains(tag, NSFW)) {
+                            cond.push(true);
+                        }
+
+                        else {
+                            cond.push(false);
+                        }
+                    });
+
+                    if (cond.includes(true)) {
+                        post.nsfw = true;
+                    }
+
+                    else {
+                        post.nsfw = false;
+                    }
                 }
 
                 catch (e) {
@@ -520,14 +579,22 @@ router.get('/votes', (req, res, next) => {
     });
 });
 
-Array.prototype.clean = function(deleteValue) {
+Array.prototype.clean = function (deleteValue) {
     for (var i = 0; i < this.length; i++) {
-      if (this[i] == deleteValue) {         
-        this.splice(i, 1);
-        i--;
-      }
+        if (this[i] == deleteValue) {
+            this.splice(i, 1);
+            i--;
+        }
     }
     return this;
 };
+
+function contains(target, pattern) {
+    var value = 0;
+    pattern.forEach(function (word) {
+        value = value + target.includes(word);
+    });
+    return (value === 1)
+}
 
 module.exports = router;
