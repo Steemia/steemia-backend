@@ -116,7 +116,7 @@ function _get_posts(req, res, next, type, tag) {
                     post.raw_body = post.body;
                     post.body = HELPER.parse_body(post.body);
 
-                    post.body = HELPER.parse_videos(post.body);
+                    post.body = HELPER.parse_videos(post.raw_body);
 
                     post.reading_text = readingTime(post.body);
 
@@ -321,6 +321,8 @@ router.get('/info', (req, res, next) => {
 
         post.body = HELPER.parse_body(post.body);
 
+        post.body = HELPER.parse_videos(post.raw_body);
+
         post.reading_text = readingTime(post.body);
 
         res.send(_get_response(post, image, top_likers));
@@ -415,6 +417,8 @@ router.get('/feed', (req, res, next) => {
                 post.raw_body = post.body;
 
                 post.body = HELPER.parse_body(post.body);
+
+                post.body = HELPER.parse_videos(post.raw_body);
 
                 try {
                     let cond = [];

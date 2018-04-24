@@ -135,7 +135,7 @@ function get_body_image(post) {
  */
 function get_body_videos(post) {
     let videos = null;
-    let v = post.body.trim().match(/^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/igm);
+    let v = post.body.trim().match(/(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/[a-zA-Z0-9_.-]*/igm);
     if (v !== null) {
         videos = v;
     }
@@ -144,7 +144,7 @@ function get_body_videos(post) {
 
 function parse_videos(body) {
     try {
-        let v = body.trim().match(/^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/igm);
+        let v = body.trim().match(/^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/[a-zA-Z0-9_.-]*/igm);
         if (v !== null) {
             v.map(video => {
                 let url = 'https://youtube.com/embed/';
