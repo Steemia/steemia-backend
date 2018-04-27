@@ -1,4 +1,8 @@
 var exports = module.exports = {};
+var getYouTubeID = require('get-youtube-id');
+
+const IMG_REGEX = /https?:\/\/(?:[-a-zA-Z0-9._]*[-a-zA-Z0-9])(?::\d{2,5})?(?:[\/?#](?:[^\s"'<>\][()]*[^\s"'<>\][().,])?(?:(?:\.(?:tiff?|jpe?g|gif|png|svg|ico)|ipfs\/[a-z\d]{40,})))/gim;
+const YT_REGEX = /(https?\:\/\/)?(www\.)?(?:youtube\.com\/\S*(?:(?:\/e(?:mbed))?\/|watch\?(?:\S*?&?v\=))|youtu\.be\/)([a-zA-Z0-9_-]{6,11})/g;
 
 /**
  * Method to get top likers from a post.
@@ -107,7 +111,7 @@ function get_body_image(post) {
     }
 
     catch (e) {
-        let n = post.body.match(/https?:\/\/(?:[-a-zA-Z0-9._]*[-a-zA-Z0-9])(?::\d{2,5})?(?:[/?#](?:[^\s"'<>\][()]*[^\s"'<>\][().,])?(?:(?:\.(?:tiff?|jpe?g|gif|png|svg|ico)|ipfs\/[a-z\d]{40,})))/gi)
+        let n = post.body.match(IMG_REGEX)
         if (n === null) {
             let images = post.body.match(
                 /^(https?\:\/\/)?(www\.)?(steemit-production-imageproxy-thumbnail.s3.amazonaws\.com)\/[a-zA-Z0-9_.-]*/gmi
@@ -135,7 +139,7 @@ function get_body_image(post) {
  */
 function get_body_videos(post) {
     let videos = null;
-    let v = post.body.trim().match(/(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/[a-zA-Z0-9_.-]*/igm);
+    let v = post.body.trim().match(YT_REGEX);
     if (v !== null) {
         videos = v;
     }
@@ -144,31 +148,21 @@ function get_body_videos(post) {
 
 function parse_videos(body) {
     try {
-        let v = body.trim().match(/^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/[a-zA-Z0-9_.-]*/igm);
+        let v = body.trim().match(YT_REGEX);
         if (v !== null) {
             v.map(video => {
                 let url = 'https://youtube.com/embed/';
-                let id = YouTubeGetID(video);
+                let id = getYouTubeID(video);
                 url += id;
-                body = body.replace(video, '<iframe width="100%" height="320px" src="' + url + '" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>');
+
+                if (video.indexOf("channel") <= -1) {
+                    body = body.replace(video, '<iframe width="100%" height="320px" src="' + url + '" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>');
+                }
             });
         }
-    } catch (e) { console.log(e) }
+    } catch (e) { }
 
     return body;
-}
-
-function YouTubeGetID(url) {
-    var ID = '';
-    url = url.replace(/(>|<)/gi, '').split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/);
-    if (url[2] !== undefined) {
-        ID = url[2].split(/[^0-9a-z_\-]/i);
-        ID = ID[0];
-    }
-    else {
-        ID = url;
-    }
-    return ID;
 }
 
 /**
@@ -198,11 +192,28 @@ function parse_body(body) {
         });
     } catch (e) { }
 
+    try {
 
-    // Replace all images urls with image tag (Including IPFS images)
-    body = body.replace(
-        /https?:\/\/(?:[-a-zA-Z0-9._]*[-a-zA-Z0-9])(?::\d{2,5})?(?:[/?#](?:[^\s"'<>\][()]*[^\s"'<>\][().,])?(?:(?:\.(?:tiff?|jpe?g|gif|png|svg|ico)|ipfs\/[a-z\d]{40,})))/gi,
-        '<img src="https://steemitimages.com/0x0/' + encodeURI('$&') + '" />');
+        let img_array = body.match(IMG_REGEX);
+        img_array.map(image => {
+            
+            try {
+                let index = body.match(image).index;
+                if (body[index - 1] - 1 === '"' || body[index - 1] - 1 === "/" || body[index - 1] - 1 === ">") {
+
+                }
+
+                else {
+                    body = body.replace(image, '<img src="https://steemitimages.com/0x0/' + encodeURI(image) + '" />');
+                }
+                
+            } catch (e) { }
+            
+
+        });
+
+
+    } catch (e) { }
 
     // Parse Steemit production links
 
@@ -212,10 +223,20 @@ function parse_body(body) {
         );
         if (images !== null) {
             images.map(image => {
-                body = body.replace(image, '<img src="https://steemitimages.com/0x0/' + encodeURI('$&') + '" />')
+
+                let index = body.match(image);
+                console.log(index)
+                if (index - 1 === '"' || index - 1 === "/") {
+
+                }
+
+                else {
+                    body = body.replace(image, '<img src="https://steemitimages.com/0x0/' + encodeURI(image) + '" />');
+                }
+                
             });
         }
-    } catch(e) { console.log(e)}
+    } catch(e) { }
 
     return body;
 }

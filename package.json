@@ -11,10 +11,12 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.6.0",
+    "autolinker": "^1.6.2",
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
     "engine.io-client": "^3.2.1",
     "express": "^4.16.3",
+    "get-youtube-id": "^1.0.0",
     "json-rpc-client": "^0.2.2",
     "json-rpc-ws": "^5.0.0",
     "lightrpc": "0.0.5",

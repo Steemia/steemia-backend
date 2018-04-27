@@ -7,12 +7,12 @@ var md = new Remarkable({
     breaks: true,
     linkify: false, // linkify is done locally
     typographer: false, // https://github.com/jonschlinkert/remarkable/issues/142#issuecomment-221546793
-    quotes: '“”‘’',
 });
 const marked = require('marked');
 var express = require('express');
 var router = express.Router();
 var readingTime = require('reading-time');
+var Autolinker = require('autolinker');
 
 const NSFW = ['nsfw', 'NSFW', 'porn', 'dporn', 'Dporn', 'Dporncovideos', 'dporncovideos'];
 
@@ -114,9 +114,9 @@ function _get_posts(req, res, next, type, tag) {
                     }
 
                     post.raw_body = post.body;
-                    post.body = HELPER.parse_body(post.body);
 
                     post.body = HELPER.parse_videos(post.raw_body);
+                    post.body = HELPER.parse_body(post.body);
 
                     post.reading_text = readingTime(post.body);
 
@@ -147,7 +147,6 @@ function _get_posts(req, res, next, type, tag) {
             }
         }
         catch (e) {
-            console.log(e)
             res.send({
                 results: [],
                 offset: null,
@@ -170,13 +169,24 @@ function _get_posts(req, res, next, type, tag) {
  * @returns Returns an object with the response.
  */
 function _get_response(post, image, top_likers) {
+    let body = md.render(post.body);
+
+    // Sanitize
+    try {
+        body = body.replace('&lt;img src=&quot;https://steemitimages.com/0x0/', '');
+        body = body.replace('&quot; /&gt;', '');
+    } catch(e) { console.log(e) }
+
+    // Autolinker
+    body = Autolinker.link(body);
+
     return {
         author: post.author,
         avatar: 'https://steemitimages.com/u/' + post.author + '/avatar/small',
         reblogged_by: post.reblogged_by,
         author_reputation: post.author_reputation,
         title: post.title,
-        full_body: md.render(post.body),
+        full_body: body,
         raw_body: post.raw_body,
         url: post.url,
         created: post.created,
@@ -319,10 +329,9 @@ router.get('/info', (req, res, next) => {
 
         post.raw_body = post.body;
 
-        post.body = HELPER.parse_body(post.body);
-
         post.body = HELPER.parse_videos(post.raw_body);
 
+        post.body = HELPER.parse_body(post.body);
         post.reading_text = readingTime(post.body);
 
         res.send(_get_response(post, image, top_likers));
@@ -367,7 +376,9 @@ router.get('/feed', (req, res, next) => {
     }
 
     client.sendAsync('get_discussions_by_feed', [object]).then(posts => {
+
         if (posts.length != 1) {
+
             let result = posts.map(post => {
 
                 try {
@@ -375,7 +386,6 @@ router.get('/feed', (req, res, next) => {
                 }
 
                 catch (e) {
-
                 }
 
                 // Check if user has voted this post.
@@ -414,12 +424,6 @@ router.get('/feed', (req, res, next) => {
                     post.reblogged_by = null;
                 }
 
-                post.raw_body = post.body;
-
-                post.body = HELPER.parse_body(post.body);
-
-                post.body = HELPER.parse_videos(post.raw_body);
-
                 try {
                     let cond = [];
 
@@ -445,6 +449,12 @@ router.get('/feed', (req, res, next) => {
                 catch (e) {
                     post.nsfw = false;
                 }
+
+                post.raw_body = post.body;
+
+                post.body = HELPER.parse_videos(post.raw_body);
+                post.body = HELPER.parse_body(post.body);
+        
 
                 post.reading_text = readingTime(post.body);
 
@@ -474,6 +484,7 @@ router.get('/feed', (req, res, next) => {
             });
         }
     }).catch(err => {
+        console.log(err)
         res.send({
             results: [],
             offset: null,
