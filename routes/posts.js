@@ -13,6 +13,7 @@ var express = require('express');
 var router = express.Router();
 var readingTime = require('reading-time');
 var Autolinker = require('autolinker');
+var Promise = require("bluebird");
 
 const NSFW = ['nsfw', 'NSFW', 'porn', 'dporn', 'Dporn', 'Dporncovideos', 'dporncovideos'];
 
@@ -175,7 +176,7 @@ function _get_response(post, image, top_likers) {
     try {
         body = body.replace('&lt;img src=&quot;https://steemitimages.com/0x0/', '');
         body = body.replace('&quot; /&gt;', '');
-    } catch(e) { console.log(e) }
+    } catch (e) { console.log(e) }
 
     // Autolinker
     body = Autolinker.link(body);
@@ -454,7 +455,7 @@ router.get('/feed', (req, res, next) => {
 
                 post.body = HELPER.parse_videos(post.raw_body);
                 post.body = HELPER.parse_body(post.body);
-        
+
 
                 post.reading_text = readingTime(post.body);
 
@@ -547,6 +548,79 @@ router.get('/comments', (req, res, next) => {
     });
 });
 
+router.get('/comments-new', (req, res, next) => {
+    let author = req.query.author;
+    let permlink = decodeURIComponent(req.query.permlink);
+    let username = req.query.username;
+    permlink = permlink.split('/')[3];
+    
+
+    let fetchReplies = (author, permlink) => {
+        return client.sendAsync('get_content_replies', [author, permlink])
+            .then((replies) => {
+                return Promise.map(replies, (r) => {
+                    if (r.children > 0) {
+                        return fetchReplies(r.author, r.permlink)
+                            .then((children) => {
+                                return {
+                                    body: md.render(r.body),
+                                    raw_body: r.body,
+                                    parent_author: r.parent_author,
+                                    avatar: 'https://steemitimages.com/u/' + r.author + '/avatar/small',
+                                    created: r.created,
+                                    url: r.url,
+                                    permlink: r.permlink,
+                                    author_reputation: UTIL.reputation(r.author_reputation),
+                                    author: r.author,
+                                    category: r.category,
+                                    net_votes: r.net_votes,
+                                    net_likes: r.net_likes,
+                                    pending_payout_value: parseFloat(r.total_payout_value) + parseFloat(r.pending_payout_value),
+                                    vote: HELPER.is_post_voted(username, r),
+                                    children: r.children,
+                                    replies: children
+                                }
+                            });
+                    } else {
+                        return {
+                            body: md.render(r.body),
+                            raw_body: r.body,
+                            parent_author: r.parent_author,
+                            avatar: 'https://steemitimages.com/u/' + r.author + '/avatar/small',
+                            created: r.created,
+                            url: r.url,
+                            permlink: r.permlink,
+                            author_reputation: UTIL.reputation(r.author_reputation),
+                            author: r.author,
+                            category: r.category,
+                            net_votes: r.net_votes,
+                            net_likes: r.net_likes,
+                            pending_payout_value: parseFloat(r.total_payout_value) + parseFloat(r.pending_payout_value),
+                            vote: HELPER.is_post_voted(username, r),
+                            children: r.children,
+                            replies: []
+                        }
+                    }
+                });
+            });
+    }
+
+    client.sendAsync('get_content', [author, permlink])
+        .then((post) => {
+            return fetchReplies(author, permlink)
+                .then((comments) => {
+                    post.replies = comments;
+                    return post;
+                });
+        })
+        .then((post) => {
+            res.send({
+                results: post.replies
+            })
+        })
+        .catch(console.log);
+});
+
 /**
  * Method to retrieve post votes
  */
@@ -556,7 +630,7 @@ router.get('/votes', (req, res, next) => {
 
     if (author === null || author === undefined || author === '') {
         if (url === null || url === undefined || url === '') {
-            return next(HELPER._prepare_error(500, 'Required parameters "author" and "permlink" are missing.', 'Internal'));
+            return next(HELPER._prepare_error(500, 'Required parameters "author" and "permlink" are missin?., m.', 'Internal'));
         }
         return next(HELPER._prepare_error(500, 'Required parameter "author" is missing.', 'Internal'));
     }
