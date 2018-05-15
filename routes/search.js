@@ -249,6 +249,7 @@ async function _is_following(username, target) {
  * Method to get post data
  * @param {String} author 
  * @param {String} permlink 
+ * @returns a promise with the post body
  */
 async function _get_body(author, permlink) {
     return new Promise(resolve => {
@@ -258,6 +259,11 @@ async function _get_body(author, permlink) {
     });
 }
 
+/**
+ * Method to get user followers
+ * @param {String} user 
+ * @returns a promise with the followers
+ */
 async function get_followers(user) {
     return new Promise(resolve => {
         client.sendAsync('get_followers', [user.toString(), '', 'blog', 1000]).then(res => {
@@ -266,18 +272,22 @@ async function get_followers(user) {
     });
 }
 
+/**
+ * Method to call followers
+ * @param {Array<object>} users 
+ * @returns an array with the followers
+ */
 async function call_followers(users) {
     let users_data = [];
     for (let i = 0; i < users.length; i++) {
         try {
             users[i] = JSON.parse(JSON.stringify(users[i]));
-
             let success = await get_followers(users[i].name);
             if (success) {
                 users[i].followers = success;
                 users_data.push(users[i]);
             }
-        } catch (err) {}
+        } catch (err) { resolve(err); }
     }
     return users_data;
 }

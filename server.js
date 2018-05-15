@@ -5,6 +5,7 @@ const BODY_PARSER = require('body-parser');
 const POST_ROUTES = require('./routes/posts');
 const SEARCH_ROUTES = require('./routes/search');
 const ACCOUNTS_ROUTES = require('./routes/accounts');
+const TAGS_ROUTES = require('./routes/tags');
 const MIDDLEWARE = require('./middleware');
 
 /**
@@ -24,10 +25,6 @@ APP.use((req, res, next) => {
     // Request headers you wish to allow
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
 
-    // Set to true if you need the website to include cookies in the requests sent
-    // to the API (e.g. in case you use sessions)
-    res.setHeader('Access-Control-Allow-Credentials', true);
-
     // Pass to next layer of middleware
     next();
 });
@@ -38,6 +35,7 @@ APP.use((req, res, next) => {
 APP.use('/posts', POST_ROUTES); // Endpoints for Post Routes
 APP.use('/users', ACCOUNTS_ROUTES); // Endpoints for Users Routes
 APP.use('/search', SEARCH_ROUTES); // Endpoints for Search Routes
+APP.use('/tags', TAGS_ROUTES); // Endpoints for Tags Routes
 
 // Handle the base path
 APP.get('/', (req, res) => {

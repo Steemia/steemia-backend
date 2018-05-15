@@ -553,7 +553,7 @@ router.get('/comments-new', (req, res, next) => {
     let permlink = decodeURIComponent(req.query.permlink);
     let username = req.query.username;
     permlink = permlink.split('/')[3];
-    
+
 
     let fetchReplies = (author, permlink) => {
         return client.sendAsync('get_content_replies', [author, permlink])
@@ -562,6 +562,7 @@ router.get('/comments-new', (req, res, next) => {
                     if (r.children > 0) {
                         return fetchReplies(r.author, r.permlink)
                             .then((children) => {
+                                let vote = HELPER.is_post_voted(username, r);
                                 return {
                                     body: md.render(r.body),
                                     raw_body: r.body,
@@ -576,12 +577,14 @@ router.get('/comments-new', (req, res, next) => {
                                     net_votes: r.net_votes,
                                     net_likes: r.net_likes,
                                     pending_payout_value: parseFloat(r.total_payout_value) + parseFloat(r.pending_payout_value),
-                                    vote: HELPER.is_post_voted(username, r),
+                                    vote: vote,
                                     children: r.children,
                                     replies: children
                                 }
+
                             });
                     } else {
+                        let vote = HELPER.is_post_voted(username, r);
                         return {
                             body: md.render(r.body),
                             raw_body: r.body,
@@ -596,7 +599,7 @@ router.get('/comments-new', (req, res, next) => {
                             net_votes: r.net_votes,
                             net_likes: r.net_likes,
                             pending_payout_value: parseFloat(r.total_payout_value) + parseFloat(r.pending_payout_value),
-                            vote: HELPER.is_post_voted(username, r),
+                            vote: vote,
                             children: r.children,
                             replies: []
                         }
@@ -618,7 +621,7 @@ router.get('/comments-new', (req, res, next) => {
                 results: post.replies
             })
         })
-        .catch(console.log);
+        .catch(err => console.log(err));
 });
 
 /**
@@ -668,7 +671,7 @@ router.get('/votes', (req, res, next) => {
     });
 });
 
-Array.prototype.clean = function (deleteValue) {
+Array.prototype.clean = (deleteValue) => {
     for (var i = 0; i < this.length; i++) {
         if (this[i] == deleteValue) {
             this.splice(i, 1);
@@ -680,7 +683,7 @@ Array.prototype.clean = function (deleteValue) {
 
 function contains(target, pattern) {
     var value = 0;
-    pattern.forEach(function (word) {
+    pattern.forEach((word) => {
         value = value + target.includes(word);
     });
     return (value === 1)
