@@ -29,6 +29,10 @@ function _get_posts(req, res, next, type, tag) {
     let start_permlink = req.query.start_permlink;
     let username = req.query.username;
 
+    if (tag === "" || tag === null || tag === undefined) {
+        tag = '';
+    }
+
     if (Number.isNaN(limit)) {
         return next(HELPER._prepare_error(500, 'Required parameter "limit" is missing.', 'Internal'));
     }
@@ -213,21 +217,24 @@ function _get_response(post, image, top_likers) {
  * Method to retrieve new posts
  */
 router.get('/new', (req, res, next) => {
-    _get_posts(req, res, next, 'get_discussions_by_created', '');
+
+    _get_posts(req, res, next, 'get_discussions_by_created', req.query.tag);
 });
 
 /**
  * Method to retrieve trending posts
  */
 router.get('/trending', (req, res, next) => {
-    _get_posts(req, res, next, 'get_discussions_by_trending', '');
+    
+    _get_posts(req, res, next, 'get_discussions_by_trending', req.query.tag);
 });
 
 /**
  * Method to retrieve hot posts
  */
 router.get('/hot', (req, res, next) => {
-    _get_posts(req, res, next, 'get_discussions_by_hot', '');
+    
+    _get_posts(req, res, next, 'get_discussions_by_hot', req.query.tag);
 });
 
 /**
