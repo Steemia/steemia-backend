@@ -47,6 +47,12 @@ router.get('/info', (req, res, next) => {
         }
 
         let balance = STEEM.formatter.estimateAccountValue(result);
+
+        get_properties().then(data =>  {
+            total_vesting_shares = data.total_vesting_shares
+            total_vesting_fund_steem = data.total_vesting_fund_steem
+        });
+
         balance.then(bal => {
             let r = {
                 created: result.created,
@@ -56,10 +62,16 @@ router.get('/info', (req, res, next) => {
                 json_metadata: result.json_metadata,
                 estimated_balance: bal,
                 post_count: result.post_count,
+                vesting_shares: result.vesting_shares,
                 sbd_balance: result.sbd_balance,
                 balance: result.balance,
-
+                savings_balance: result.savings_balance,
+                savings_sbd_balance: result.savings_sbd_balance
             }
+            r.delegated_steem_power = (STEEM.formatter.vestToSteem((result.received_vesting_shares.split(' ')[0]) + ' VESTS', total_vesting_shares, total_vesting_fund_steem)).toFixed(0)
+            r.outgoing_steem_power = (STEEM.formatter.vestToSteem((result.received_vesting_shares.split(' ')[0] - result.delegated_vesting_shares.split(' ')[0]) + ' VESTS', total_vesting_shares, total_vesting_fund_steem) - r.delegated_steem_power).toFixed(0)
+      
+
             if (Object.keys(result.json_metadata).length === 0 && result.json_metadata.constructor === Object) {
                 res.send(r);
             }
