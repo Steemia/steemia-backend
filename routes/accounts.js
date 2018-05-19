@@ -70,7 +70,7 @@ router.get('/info', (req, res, next) => {
             }
             r.delegated_steem_power = (STEEM.formatter.vestToSteem((result.received_vesting_shares.split(' ')[0]) + ' VESTS', total_vesting_shares, total_vesting_fund_steem)).toFixed(0)
             r.outgoing_steem_power = (STEEM.formatter.vestToSteem((result.received_vesting_shares.split(' ')[0] - result.delegated_vesting_shares.split(' ')[0]) + ' VESTS', total_vesting_shares, total_vesting_fund_steem) - r.delegated_steem_power).toFixed(0)
-      
+            r.exact_delegation = parseInt(r.delegated_steem_power) + parseInt(r.outgoing_steem_power);
 
             if (Object.keys(result.json_metadata).length === 0 && result.json_metadata.constructor === Object) {
                 res.send(r);
