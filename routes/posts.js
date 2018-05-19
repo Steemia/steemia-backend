@@ -185,6 +185,10 @@ function _get_response(post, image, top_likers) {
     // Autolinker
     body = Autolinker.link(body);
 
+    for(i in post.beneficiaries) {
+        post.beneficiaries[i].weight = (post.beneficiaries[i].weight)/100
+    }
+
     return {
         author: post.author,
         avatar: 'https://steemitimages.com/u/' + post.author + '/avatar/small',
@@ -203,6 +207,7 @@ function _get_response(post, image, top_likers) {
         net_likes: post.net_votes,
         max_accepted_payout: parseFloat(post.max_accepted_payout),
         total_payout_reward: parseFloat(post.total_payout_value) + parseFloat(post.pending_payout_value),
+        beneficiaries: post.beneficiaries,
         reading_time: post.reading_text.text,
         root_author: post.root_author,
         root_permlink: post.root_permlink,
