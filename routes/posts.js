@@ -107,8 +107,6 @@ function _get_posts(req, res, next, type, tag) {
                         post.nsfw = false;
                     }
 
-                    let top_likers = HELPER.get_top_likers(post.active_votes);
-
                     if (post.reblogged_by.length > 0) {
                         console.log(post.reblogged_by)
                         post.reblogged_by = post.reblogged_by[0];
@@ -124,6 +122,13 @@ function _get_posts(req, res, next, type, tag) {
                     post.body = HELPER.parse_body(post.body);
 
                     post.reading_text = readingTime(post.body);
+
+                    let active_votes = post.active_votes.slice(0);
+                    active_votes.sort((a,b) => {
+                      return b.rshares - a.rshares
+                    })
+
+                    let top_likers = HELPER.get_top_likers(active_votes);
 
                     return _get_response(post, image, top_likers);
                 });
@@ -189,6 +194,26 @@ function _get_response(post, image, top_likers) {
         post.beneficiaries[i].weight = (post.beneficiaries[i].weight)/100
     }
 
+    let totalPayout =
+      parseFloat(post.pending_payout_value) +
+      parseFloat(post.total_payout_value) +
+      parseFloat(post.curator_payout_value);
+
+    let voteRshares = post.active_votes.reduce((a, b) => a + parseFloat(b.rshares), 0);
+    let ratio = totalPayout / voteRshares;
+    
+    for(i in post.active_votes) {
+        post.active_votes[i].value = (post.active_votes[i].rshares * ratio).toFixed(2);
+        post.active_votes[i].reputation = UTIL.reputation(post.active_votes[i].reputation);
+        post.active_votes[i].percent = post.active_votes[i].percent / 100;
+        post.active_votes[i].profile_image = 'https://steemitimages.com/u/' + post.active_votes[i].voter + '/avatar/small'
+    }
+
+    let active_votes = post.active_votes.slice(0);
+    active_votes.sort((a,b) => {
+      return b.value - a.value
+    })
+    
     return {
         author: post.author,
         avatar: 'https://steemitimages.com/u/' + post.author + '/avatar/small',
@@ -214,7 +239,8 @@ function _get_response(post, image, top_likers) {
         videos: post.videos || null,
         is_nsfw: post.nsfw,
         video_only: post.video_only,
-        top_likers_avatars: top_likers
+        top_likers_avatars: top_likers,
+        votes: active_votes
     };
 }
 
