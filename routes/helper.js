@@ -18,7 +18,7 @@ function get_top_likers(object) {
             if (object[i] != null) {
                 if (object[i].percent <= 0) { limit = 4; }
                 else {
-                    top_likers.push('https://steemitimages.com/u/' + object[i].voter + '/avatar/small');
+                    top_likers.push('https://images.steemitimages.com/u/' + object[i].voter + '/avatar/small');
                 }
 
             }
@@ -204,7 +204,7 @@ function parse_body(body) {
                 }
 
                 else {
-                    body = body.replace(image, '<img src="https://steemitimages.com/0x0/' + encodeURI(image) + '" />');
+                    body = body.replace(image, '<img src="https://images.steemitimages.com/0x0/' + encodeURI(image) + '" />');
                 }
                 
             } catch (e) { }
@@ -231,7 +231,7 @@ function parse_body(body) {
                 }
 
                 else {
-                    body = body.replace(image, '<img src="https://steemitimages.com/0x0/' + encodeURI(image) + '" />');
+                    body = body.replace(image, '<img src="https://images.steemitimages.com/0x0/' + encodeURI(image) + '" />');
                 }
                 
             });

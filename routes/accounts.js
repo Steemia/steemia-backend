@@ -58,7 +58,7 @@ router.get('/info', (req, res, next) => {
                 created: result.created,
                 reputation: result.reputation,
                 username: result.name,
-                profile_image: `https://img.busy.org/@${result.name}`,
+                profile_image: `https://images.steemitimages.com/u/${result.name}/avatar/small`,
                 json_metadata: result.json_metadata,
                 estimated_balance: bal,
                 post_count: result.post_count,
@@ -189,7 +189,7 @@ async function getFollows(username, limit, start, fn, type) {
 
                 return {
                     account: user[type],
-                    avatar: 'https://steemitimages.com/u/' + user[type] + '/avatar/small'
+                    avatar: 'https://images.steemitimages.com/u/' + user[type] + '/avatar/small'
                 }
 
             });
