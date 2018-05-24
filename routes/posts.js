@@ -605,7 +605,7 @@ router.get('/comments-new', (req, res, next) => {
                                     body: md.render(r.body),
                                     raw_body: r.body,
                                     parent_author: r.parent_author,
-                                    avatar: 'https://.imagessteemitimages.com/u/' + r.author + '/avatar/small',
+                                    avatar: 'https://steemitimages.com/u/' + r.author + '/avatar/small',
                                     created: r.created,
                                     url: r.url,
                                     permlink: r.permlink,
