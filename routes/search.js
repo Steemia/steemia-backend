@@ -149,7 +149,7 @@ router.get('/tags', (req, res, next) => {
 
             return {
                 author: post.author,
-                avatar: 'https://images.steemitimages.com/u/' + post.author + '/avatar/small',
+                avatar: 'https://steemitimages.com/u/' + post.author + '/avatar/small',
                 author_reputation: UTIL.reputation(missing_data.author_reputation),
                 title: post.title,
                 full_body: marked(post.body),
@@ -212,7 +212,7 @@ router.get('/users', async (req, res, next) => {
 
             return {
                 name: user.account,
-                avatar: 'https://images.steemitimages.com/u/' + user.account + '/avatar/small',
+                avatar: 'https://steemitimages.com/u/' + user.account + '/avatar/small',
                 reputation: null,
                 has_followed: has_followed
             }

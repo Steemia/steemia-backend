@@ -189,7 +189,7 @@ async function getFollows(username, limit, start, fn, type) {
 
                 return {
                     account: user[type],
-                    avatar: 'https://images.steemitimages.com/u/' + user[type] + '/avatar/small'
+                    avatar: 'https://steemitimages.com/u/' + user[type] + '/avatar/small'
                 }
 
             });

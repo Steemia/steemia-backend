@@ -561,7 +561,7 @@ router.get('/comments', (req, res, next) => {
                 body: md.render(comment.body),
                 raw_body: comment.body,
                 parent_author: comment.parent_author,
-                avatar: 'https://images.steemitimages.com/u/' + comment.author + '/avatar/small',
+                avatar: 'https://steemitimages.com/u/' + comment.author + '/avatar/small',
                 created: comment.created,
                 url: comment.url,
                 permlink: comment.permlink,
@@ -627,7 +627,7 @@ router.get('/comments-new', (req, res, next) => {
                             body: md.render(r.body),
                             raw_body: r.body,
                             parent_author: r.parent_author,
-                            avatar: 'https://images.steemitimages.com/u/' + r.author + '/avatar/small',
+                            avatar: 'https://steemitimages.com/u/' + r.author + '/avatar/small',
                             created: r.created,
                             url: r.url,
                             permlink: r.permlink,
@@ -691,7 +691,7 @@ router.get('/votes', (req, res, next) => {
                 return;
             }
             return {
-                profile_image: 'https://images.steemitimages.com/u/' + voter.voter + '/avatar/small',
+                profile_image: 'https://steemitimages.com/u/' + voter.voter + '/avatar/small',
                 username: voter.voter,
                 reputation: voter.reputation,
                 percent: voter.percent
