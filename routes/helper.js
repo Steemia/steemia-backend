@@ -204,7 +204,7 @@ function parse_body(body) {
                 }
 
                 else {
-                    body = body.replace(image, '<img src="https://images.steemitimages.com/0x0/' + encodeURI(image) + '" />');
+                    body = body.replace(image, '<img src="https://steemitimages.com/0x0/' + encodeURI(image) + '" />');
                 }
                 
             } catch (e) { }
