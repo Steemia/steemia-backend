@@ -58,7 +58,7 @@ router.get('/info', (req, res, next) => {
                 created: result.created,
                 reputation: result.reputation,
                 username: result.name,
-                profile_image: `https://images.steemitimages.com/u/${result.name}/avatar/small`,
+                profile_image: `https://steemitimages.com/u/${result.name}/avatar/small`,
                 json_metadata: result.json_metadata,
                 estimated_balance: bal,
                 post_count: result.post_count,
