@@ -198,7 +198,7 @@ async function getFollows(username, limit, start, fn, type) {
                 following.shift();
             }
 
-            if (start !== '' || start !== undefined || start !== null) {
+            if (start !== null) {
                 following.shift();
             }
 
@@ -220,7 +220,7 @@ router.get('/followers', async (req, res, next) => {
     let start_follower = req.query.start;
 
     if (start_follower === '' || start_follower === null || start_follower === undefined) {
-        start_follower = '';
+        start_follower = null;
     }
 
     if (username === '' || username === null || username === undefined) {
@@ -241,7 +241,7 @@ router.get('/following', async (req, res, next) => {
     let start_follower = req.query.start;
 
     if (start_follower === '' || start_follower === null || start_follower === undefined) {
-        start_follower = '';
+        start_follower = null;
     }
 
     if (username === '' || username === null || username === undefined) {
