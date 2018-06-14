@@ -14,6 +14,7 @@ var router = express.Router();
 var readingTime = require('reading-time');
 var Autolinker = require('autolinker');
 var Promise = require("bluebird");
+var striptags = require('striptags');
 
 const NSFW = ['nsfw', 'NSFW', 'porn', 'dporn', 'Dporn', 'Dporncovideos', 'dporncovideos'];
 
@@ -212,7 +213,9 @@ function _get_response(post, image, top_likers) {
     let active_votes = post.active_votes.slice(0);
     active_votes.sort((a,b) => {
       return b.value - a.value
-    })
+    });
+
+    let only_text = striptags(body);
     
     return {
         author: post.author,
@@ -222,6 +225,7 @@ function _get_response(post, image, top_likers) {
         title: post.title,
         full_body: body,
         raw_body: post.raw_body,
+        only_text: only_text,
         url: post.url,
         created: post.created,
         tags: post.json_metadata.tags,

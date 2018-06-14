@@ -6,6 +6,7 @@ var express = require('express');
 var router = express.Router();
 var request = require('request');
 const marked = require('marked');
+var striptags = require('striptags');
 
 const ASK_STEEM = 'https://api.asksteem.com/';
 
@@ -61,12 +62,15 @@ router.get('/posts', async (req, res, next) => {
 
             let top_likers = HELPER.get_top_likers(post.active_votes);
 
+            let only_text = striptags(marked(post.body));
+
             return {
                 author: post.author,
                 avatar: 'https://steemitimages.com/u/' + post.author + '/avatar/small',
                 author_reputation: UTIL.reputation(missing_data.author_reputation),
                 title: post.title,
                 full_body: marked(post.body),
+                only_text: only_text,
                 url: post.permlink,
                 created: post.created,
                 tags: post.tags,
@@ -147,12 +151,15 @@ router.get('/tags', (req, res, next) => {
 
             let top_likers = HELPER.get_top_likers(post.active_votes);
 
+            let only_text = striptags(marked(post.body));
+
             return {
                 author: post.author,
                 avatar: 'https://steemitimages.com/u/' + post.author + '/avatar/small',
                 author_reputation: UTIL.reputation(missing_data.author_reputation),
                 title: post.title,
                 full_body: marked(post.body),
+                only_text: only_text,
                 url: post.permlink,
                 created: post.created,
                 tags: post.tags,

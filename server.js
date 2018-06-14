@@ -1,21 +1,33 @@
-const EXPRESS = require('express');
-const APP = EXPRESS();
-const PORT = process.env.PORT || 3000;
-const BODY_PARSER = require('body-parser');
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000;
+const body_parser = require('body-parser');
 const POST_ROUTES = require('./routes/posts');
 const SEARCH_ROUTES = require('./routes/search');
 const ACCOUNTS_ROUTES = require('./routes/accounts');
 const TAGS_ROUTES = require('./routes/tags');
-const MIDDLEWARE = require('./middleware');
+const middleware = require('./middleware');
+const compress = require('compression');
+const helmet = require('helmet');
+const cors = require('cors');
 
 /**
  * Body parser setup
  */
-APP.use(BODY_PARSER.json());
-APP.use(BODY_PARSER.urlencoded({ extended: true }));
+app.use(body_parser.json());
+app.use(body_parser.urlencoded({ extended: true }));
+
+// gzip compression
+app.use(compress());
+
+// secure apps by setting various HTTP headers
+app.use(helmet());
+
+// enable CORS - Cross Origin Resource Sharing
+app.use(cors());
 
 // Add headers
-APP.use((req, res, next) => {
+app.use((req, res, next) => {
     // Website you wish to allow to connect
     res.setHeader('Access-Control-Allow-Origin', '*');
 
@@ -32,23 +44,23 @@ APP.use((req, res, next) => {
 /**
  * Routes
  */
-APP.use('/posts', POST_ROUTES); // Endpoints for Post Routes
-APP.use('/users', ACCOUNTS_ROUTES); // Endpoints for Users Routes
-APP.use('/search', SEARCH_ROUTES); // Endpoints for Search Routes
-APP.use('/tags', TAGS_ROUTES); // Endpoints for Tags Routes
+app.use('/posts', POST_ROUTES); // Endpoints for Post Routes
+app.use('/users', ACCOUNTS_ROUTES); // Endpoints for Users Routes
+app.use('/search', SEARCH_ROUTES); // Endpoints for Search Routes
+app.use('/tags', TAGS_ROUTES); // Endpoints for Tags Routes
 
 // Handle the base path
-APP.get('/', (req, res) => {
+app.get('/', (req, res) => {
     res.send('Steemia API');
 });
 
 /**
  * Middlewares for errors
  */
-APP.use(MIDDLEWARE.errorHandler);
-APP.use(MIDDLEWARE.clientErrorHandler);
-APP.all('*', (req, res) => { throw new Error('Bad request') });
-APP.use((e, req, res, next) => {
+app.use(middleware.errorHandler);
+app.use(middleware.clientErrorHandler);
+app.all('*', (req, res) => { throw new Error('Bad request') });
+app.use((e, req, res, next) => {
     if (e.message === 'Bad request') {
         res.status(400);
         res.send({
@@ -59,6 +71,6 @@ APP.use((e, req, res, next) => {
     }
 });
 
-APP.listen(PORT, () => {
-    console.log('Server listening on port ' + PORT);
+app.listen(port, () => {
+    console.log('Server listening on port ' + port);
 });
