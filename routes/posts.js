@@ -509,7 +509,11 @@ router.get('/feed', (req, res, next) => {
                 result.shift();
             }
 
-            let offset = result[result.length - 1].url.split('/')[3];
+            let offset;
+            try {
+                offset = result[result.length - 1].url.split('/')[3];
+            } catch(err) {}
+            
             let offset_author = result[result.length - 1].author;
 
             res.send({
